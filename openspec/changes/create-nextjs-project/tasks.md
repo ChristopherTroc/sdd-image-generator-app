@@ -40,7 +40,7 @@
 ## 5. Development Tools & Scripts
 
 - [x] 5.1 Verify `package.json` has scripts: dev, build, start, lint, format, type-check
-- [ ] 5.2 Test `npm run dev` starts development server on localhost:3000
+- [x] 5.2 Test `npm run dev` starts development server on localhost:3000
 - [x] 5.3 Test `npm run build` completes without errors
 - [x] 5.4 Test `npm run lint` runs ESLint checks
 - [x] 5.5 Test `npm run format` runs Prettier
@@ -60,7 +60,7 @@
 
 - [x] 7.1 Run full lint and type-check on codebase
 - [x] 7.2 Build project and verify output size is reasonable
-- [ ] 7.3 Start dev server and verify homepage renders correctly
-- [ ] 7.4 Test pre-commit hook by making intentional lint violation
-- [ ] 7.5 Verify environment variables load correctly in dev and build
-- [ ] 7.6 Test that ESLint catches a sample error
+- [x] 7.3 Start dev server and verify homepage renders correctly
+- [x] 7.4 Test pre-commit hook by making intentional lint violation
+- [x] 7.5 Verify environment variables load correctly in dev and build
+- [x] 7.6 Test that ESLint catches a sample error

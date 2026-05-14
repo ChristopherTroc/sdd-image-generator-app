@@ -21,12 +21,16 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^25.8.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
     "autoprefixer": "^10.5.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.6",
+    "eslint-plugin-next": "^0.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.4",
     "postcss": "^8.5.14",

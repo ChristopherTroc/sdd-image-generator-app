@@ -18,17 +18,15 @@ export type Env = {
 
 // Validate and get environment variables
 export function getEnv(): Env {
-  const env: Partial<Env> = {};
+  const env: Record<string, string> = {};
 
   for (const [key, config] of Object.entries(envSchema)) {
     const value = process.env[key];
     if (!value) {
-      console.warn(
-        `Missing environment variable: ${key}. Using default: ${config.default}`
-      );
-      env[key as keyof Env] = config.default;
+      console.warn(`Missing environment variable: ${key}. Using default: ${config.default}`);
+      env[key] = config.default;
     } else {
-      env[key as keyof Env] = value;
+      env[key] = value;
     }
   }
 

@@ -19,11 +19,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "allowJs": true,
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
+    "types": ["vitest/globals"],
     "paths": {
       "@/*": [
         "./src/*"
@@ -33,8 +29,7 @@
       {
         "name": "next"
       }
-    ],
-    "allowJs": true
+    ]
   },
   "include": [
     "next-env.d.ts",

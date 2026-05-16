@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @layer base {
   html {
     @apply scroll-smooth;
@@ -8,4 +10,21 @@
   body {
     @apply bg-white text-gray-900;
   }
+
+  body {
+    @apply transition-colors duration-300;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@utility animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
 }

@@ -1,10 +1,11 @@
 import parser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
+import vitestPlugin from "eslint-plugin-vitest";
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
   {
-    ignores: ["node_modules", ".next", "out", "dist", "build", ".git"],
+    ignores: ["node_modules", ".next", "out", "dist", "build", ".git", "coverage"],
   },
   {
     files: ["**/*.{ts,tsx}"],
@@ -31,6 +32,21 @@ export default [
         },
       ],
       "@typescript-eslint/explicit-module-boundary-types": "off",
+    },
+  },
+  {
+    files: ["**/*.test.{ts,tsx}", "**/tests/**/*.{ts,tsx}"],
+    plugins: {
+      vitest: vitestPlugin,
+    },
+    languageOptions: {
+      globals: {
+        ...vitestPlugin.environments?.env?.globals,
+      },
+    },
+    rules: {
+      ...vitestPlugin.configs?.recommended?.rules,
+      "no-console": "off",
     },
   },
   {

@@ -11,12 +11,23 @@ const envSchema = {
   },
 } as const;
 
+// Server-only environment variables (not exposed to client)
+const serverEnvSchema = {
+  HUGGINGFACE_API_KEY: {
+    description: "Hugging Face Inference API token (get one at https://huggingface.co/settings/tokens)",
+  },
+} as const;
+
 // Type for validated environment variables
 export type Env = {
   [K in keyof typeof envSchema]: string;
 };
 
-// Validate and get environment variables
+export type ServerEnv = {
+  [K in keyof typeof serverEnvSchema]: string;
+};
+
+// Validate and get client-safe environment variables
 export function getEnv(): Env {
   const env: Record<string, string> = {};
 
@@ -31,6 +42,23 @@ export function getEnv(): Env {
   }
 
   return env as Env;
+}
+
+// Validate and get server-only environment variables
+export function getServerEnv(): ServerEnv {
+  const env: Record<string, string> = {};
+
+  for (const [key, config] of Object.entries(serverEnvSchema)) {
+    const value = process.env[key];
+    if (!value) {
+      throw new Error(
+        `Missing required server environment variable: ${key}. ${config.description}`,
+      );
+    }
+    env[key] = value;
+  }
+
+  return env as ServerEnv;
 }
 
 // Export validated environment

@@ -1,87 +1,162 @@
-# Next.js SDD App
+# AI Image Generator
 
-A modern, production-ready Next.js application built with TypeScript, Tailwind CSS, and industry best practices.
+A modern AI-powered image generation application built with Next.js 16, React 19, and Tailwind CSS v4. Generate stunning images from text descriptions using Hugging Face Inference API, with configurable models, settings, and an intelligent prompt assistant.
+
+## Features
+
+### 🎨 AI Image Generation
+- Generate images from detailed text descriptions
+- **Model selector**: Choose between `FLUX.1-dev` (open weights) and `SD3.5-large` (higher quality)
+- **Adjustable settings**: Control guidance scale and inference steps for fine-tuned results
+- **Generation history**: Browse and re-use previous prompts via a thumbnail grid
+- **Click-to-zoom modal**: View generated images in full-screen with download capability
+- **Glassmorphism UI**: Modern, polished interface with dark mode support
+
+### ✨ Prompt Assistant
+- Built-in AI assistant that suggests creative, detailed image prompts
+- Uses **DeepSeek V4 Flash** via Hugging Face router (OpenAI-compatible API)
+- Enter a keyword and get 3-5 artistic prompt variations
+- Click a suggestion to populate the textarea instantly
+- Mobile-responsive: overlay on mobile, dropdown on desktop
+
+### 🌙 Dark Mode
+- Light / Dark / System theme modes
+- Persists preference in localStorage
+- Flash-prevention script before React hydration
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 18.17 or later
-- npm or yarn
+- Node.js 18.17 or later (use `nvm use` to select the correct version)
+- A Hugging Face account with an API token ([get one here](https://huggingface.co/settings/tokens))
 
 ### Setup
 
-1. **Use the correct Node.js version:**
+1. **Clone and install dependencies:**
    ```bash
    nvm use
-   ```
-
-2. **Install dependencies:**
-   ```bash
    npm install
    ```
 
-3. **Start the development server:**
+2. **Configure environment variables:**
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Edit `.env.local` and add your Hugging Face token:
+   ```env
+   HUGGINGFACE_API_KEY=hf_your_token_here
+   ```
+
+3. **Accept model terms (one-time):**
+   - [FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) — click "Agree and access repository"
+   - [SD3.5-large](https://huggingface.co/stabilityai/stable-diffusion-3.5-large) — requires Pro subscription
+
+4. **Start the development server:**
    ```bash
    npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:3000](http://localhost:3000) — the image generator is the home page.
+
+## Usage
+
+1. **Write a prompt** in the textarea describing the image you want
+2. **Adjust settings** (optional): model, guidance scale, inference steps
+3. Click **Generate** and wait for the AI to create your image
+4. **Click the image** to open the zoom modal (full-screen view)
+5. **Download** the image from the card or the modal
+6. **Use the Prompt Assistant** (magic wand icon) to get creative prompt suggestions
 
 ## Available Scripts
 
-- **`npm run dev`** - Start the development server with hot reload
-- **`npm run build`** - Create a production-optimized build
-- **`npm run start`** - Run the production build locally
-- **`npm run lint`** - Run ESLint to check code quality
-- **`npm run format`** - Format code with Prettier
-- **`npm run type-check`** - Run TypeScript type checking
+- **`npm run dev`** — Start the development server with Turbopack hot reload
+- **`npm run build`** — Create a production-optimized build
+- **`npm run start`** — Run the production build locally
+- **`npm run test`** — Run Vitest test suite
+- **`npm run test:watch`** — Run tests in watch mode
+- **`npm run test:ui`** — Open Vitest UI dashboard
+- **`npm run test:coverage`** — Run tests with coverage report (≥90% required)
+- **`npm run lint`** — Run ESLint to check code quality
+- **`npm run format`** — Format code with Prettier
+- **`npm run type-check`** — Run TypeScript type checking
 
 ## Project Structure
 
 ```
 src/
-├── app/                    # Next.js app directory with routes
-│   ├── layout.tsx         # Root layout component
-│   ├── page.tsx           # Home page
-│   └── globals.css        # Global styles
-├── components/            # Reusable React components
-│   └── Button.tsx         # Example styled button component
-├── lib/                   # Utility functions and helpers
-│   └── env.ts            # Environment variable definitions
-└── types/                 # TypeScript type definitions
+├── app/                       # Next.js App Router
+│   ├── layout.tsx            # Root layout with ThemeProvider, ThemeToggle
+│   ├── page.tsx              # Home page (AI Image Generator)
+│   ├── globals.css           # Global styles + Tailwind config
+│   ├── page.test.tsx         # Home page tests
+│   └── api/
+│       ├── generate-image/   # POST /api/generate-image (Hugging Face image gen)
+│       └── generate-prompts/ # POST /api/generate-prompts (DeepSeek prompt gen)
+├── components/               # Reusable React components
+│   ├── ImageGenerator.tsx    # Main image generation component with settings
+│   ├── PromptAssistant.tsx   # AI prompt suggestion assistant
+│   ├── GenerationHistory.tsx # Thumbnail grid of past generations
+│   ├── ThemeToggle.tsx       # Light/dark/system mode toggle
+│   ├── Button.tsx            # Reusable styled button
+│   └── *.test.tsx            # Component tests
+├── lib/                      # Utility functions and helpers
+│   ├── huggingface.ts        # Hugging Face Inference API for image generation
+│   ├── llm.ts                # LLM client (DeepSeek via OpenAI SDK) for prompts
+│   ├── env.ts                # Type-safe environment variable access
+│   ├── theme.tsx             # Theme context provider
+│   └── *.test.ts             # Utility tests
+├── types/                    # TypeScript type definitions
+└── tests/
+    └── setup.ts              # Vitest test setup with jest-dom matchers
 ```
 
 ## Technology Stack
 
 ### Core
-- **Next.js 15+** - React framework with server-side rendering, static generation, and API routes
-- **React 19** - Modern UI library
-- **TypeScript** - Type-safe JavaScript with strict mode enabled
+- **Next.js 16** — React framework with App Router, Turbopack, and API routes
+- **React 19** — Modern UI library with server components
+- **TypeScript** — Type-safe JavaScript with strict mode enabled
 
 ### Styling
-- **Tailwind CSS** - Utility-first CSS framework
-- **PostCSS** - CSS transformation tool with Autoprefixer
+- **Tailwind CSS v4** — Utility-first CSS with dark variant support
+- **CSS custom utilities** — Shimmer animation, glassmorphism effects
+
+### AI Integration
+- **Hugging Face Inference API** — Text-to-image generation (FLUX.1-dev, SD3.5-large)
+- **DeepSeek V4 Flash** — LLM-powered prompt suggestions via OpenAI SDK
+
+### Testing
+- **Vitest** — Fast unit test runner with Vite integration
+- **React Testing Library** — Component testing with user-event simulation
+- **Testing Library Jest DOM** — Extended DOM matchers for assertions
 
 ### Development Tools
-- **ESLint** - Code linting with Next.js recommended rules
-- **Prettier** - Code formatter for consistent style
-- **Husky** - Git hooks for pre-commit checks
-- **lint-staged** - Run linters on staged files only
+- **ESLint** — Code linting with Next.js recommended rules
+- **Prettier** — Code formatter for consistent style
+- **Husky** — Git hooks for pre-commit checks
+- **lint-staged** — Run linters on staged files only
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `HUGGINGFACE_API_KEY` | Yes | Hugging Face API token for inference |
+| `NEXT_PUBLIC_API_URL` | No | API base URL (default: localhost:3000/api) |
+
+Copy `.env.example` to `.env.local` and fill in the required values.
 
 ## Code Quality
 
 ### ESLint
 
-ESLint is configured with `next/core-web-vitals` rules to catch common issues early. Run the linter:
-
+ESLint is configured with `next/core-web-vitals` rules:
 ```bash
 npm run lint
 ```
 
 ### Prettier
-
-Prettier ensures consistent code formatting. Configure preferences in `.prettierrc.json`. Format files:
 
 ```bash
 npm run format
@@ -89,34 +164,33 @@ npm run format
 
 ### Pre-commit Hooks
 
-Husky automatically runs ESLint and Prettier on staged files before each commit. This prevents formatting issues and common bugs from entering the repository.
+Husky automatically runs ESLint and Prettier on staged files before each commit.
 
 ### Type Checking
-
-TypeScript with strict mode enabled provides compile-time type safety:
 
 ```bash
 npm run type-check
 ```
 
-## Environment Variables
+### Test Coverage
 
-Environment variables are managed with `.env` files:
-
-- **`.env.local`** - Local development variables (gitignored)
-- **`.env.development`** - Development-specific configuration
-- **`.env.production.example`** - Template for production variables
-
-Public variables must be prefixed with `NEXT_PUBLIC_`. Access environment variables with type safety using `src/lib/env.ts`.
-
-### Example
-
-```typescript
-import { env } from "@/lib/env";
-
-// Type-safe access to environment variables
-const apiUrl = env.NEXT_PUBLIC_API_URL;
+Tests enforce ≥90% coverage for statements, branches, functions, and lines:
+```bash
+npm run test:coverage
 ```
+
+## Development Methodology
+
+This project follows **Spec-Driven Development (SDD)** using the **OpenSpec** framework. Every feature goes through a structured lifecycle:
+
+1. **Proposal** — Define why and what needs to change
+2. **Specs** — Write detailed behavioral requirements with GIVEN/WHEN/THEN scenarios
+3. **Design** — Document technical decisions, architecture, and trade-offs
+4. **Tasks** — Break down implementation into trackable checklist items
+5. **Implementation** — Apply changes via `/opsx:apply`
+6. **Archive** — Sync specs to main directory and archive completed changes
+
+All change artifacts are stored under `openspec/changes/archive/` with synced specifications in `openspec/specs/`.
 
 ## TypeScript Path Aliases
 

@@ -13,6 +13,9 @@ node_modules
 # Production
 /build
 
+#ai-content
+.initial-proposals
+
 # Misc
 .DS_Store
 *.pem

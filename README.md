@@ -2,6 +2,19 @@
 
 A modern AI-powered image generation application built with Next.js 16, React 19, and Tailwind CSS v4. Generate stunning images from text descriptions using Hugging Face Inference API, with configurable models, settings, and an intelligent prompt assistant.
 
+## Development Methodology
+
+This project follows **Spec-Driven Development (SDD)** using the **OpenSpec** [**OpenSpec**](https://openspec.dev/) framework. Every feature goes through a structured lifecycle:
+
+1. **Proposal** — Define why and what needs to change
+2. **Specs** — Write detailed behavioral requirements with GIVEN/WHEN/THEN scenarios
+3. **Design** — Document technical decisions, architecture, and trade-offs
+4. **Tasks** — Break down implementation into trackable checklist items
+5. **Implementation** — Apply changes via `/opsx:apply`
+6. **Archive** — Sync specs to main directory and archive completed changes
+
+All change artifacts are stored under `openspec/changes/archive/` with synced specifications in `openspec/specs/`.
+
 ## Features
 
 ### 🎨 AI Image Generation

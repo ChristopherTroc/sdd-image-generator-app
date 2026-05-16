@@ -2,9 +2,12 @@
 
 A modern AI-powered image generation application built with Next.js 16, React 19, and Tailwind CSS v4. Generate stunning images from text descriptions using Hugging Face Inference API, with configurable models, settings, and an intelligent prompt assistant.
 
+The application is deployed on **Vercel** and available at:
+[https://sdd-image-generator-app.vercel.app/](https://sdd-image-generator-app.vercel.app/)
+
 ## Development Methodology
 
-This project follows **Spec-Driven Development (SDD)** using the **OpenSpec** [**OpenSpec**](https://openspec.dev/) framework. Every feature goes through a structured lifecycle:
+This project follows **Spec-Driven Development (SDD)** using the [**OpenSpec**](https://openspec.dev/) framework. Every feature goes through a structured lifecycle:
 
 1. **Proposal** — Define why and what needs to change
 2. **Specs** — Write detailed behavioral requirements with GIVEN/WHEN/THEN scenarios
@@ -14,6 +17,8 @@ This project follows **Spec-Driven Development (SDD)** using the **OpenSpec** [*
 6. **Archive** — Sync specs to main directory and archive completed changes
 
 All change artifacts are stored under `openspec/changes/archive/` with synced specifications in `openspec/specs/`.
+
+> **Cost & Time**: The development of this project was assisted by **DeepSeek V4 Flash** (via GitHub Copilot), with approximately **$12 USD** in total AI consumption. The human effort was approximately **1 day (~6 hours)** of work.
 
 ## Features
 

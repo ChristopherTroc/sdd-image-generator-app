@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { PromptAssistant } from "@/components/PromptAssistant";
 
 type GenerationResult = {
@@ -18,6 +18,9 @@ const MODELS = [
   { id: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" },
 ];
 
+const RETRY_DELAYS = [60_000, 30_000, 30_000, 30_000, 30_000]; // 1st: 60s, then 30s intervals
+const MAX_RETRIES = RETRY_DELAYS.length;
+
 export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,9 +32,125 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
   const [guidanceScale, setGuidanceScale] = useState(7.5);
   const [numInferenceSteps, setNumInferenceSteps] = useState(30);
 
+  // Retry state
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+  const lastRequestRef = useRef<{
+    prompt: string;
+    model: string;
+    guidanceScale: number;
+    numInferenceSteps: number;
+  } | null>(null);
+
   const displayResult = forceResult || result;
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const executeRequest = useCallback(async (requestPrompt: string, requestModel: string, requestGuidance: number, requestSteps: number) => {
+    const response = await fetch("/api/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: requestPrompt,
+        model: requestModel,
+        guidance_scale: requestGuidance,
+        num_inference_steps: requestSteps,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 202 && data.status === "retrying") {
+      // Service is starting up — schedule retry
+      return { retrying: true, message: data.message };
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to generate image");
+    }
+
+    return { retrying: false, data };
+  }, []);
+
+  const scheduleRetry = useCallback(() => {
+    const currentCount = retryCountRef.current;
+    if (currentCount >= MAX_RETRIES || !lastRequestRef.current) {
+      // Max retries exceeded
+      setIsRetrying(false);
+      setRetryMessage(null);
+      setIsLoading(false);
+      setError(
+        "The image generation service is currently unavailable. Please try again later.",
+      );
+      return;
+    }
+
+    const delay = RETRY_DELAYS[currentCount];
+    retryCountRef.current = currentCount + 1;
+
+    retryTimerRef.current = setTimeout(async () => {
+      if (!isMountedRef.current || !lastRequestRef.current) return;
+
+      const req = lastRequestRef.current;
+      try {
+        const result = await executeRequest(
+          req.prompt,
+          req.model,
+          req.guidanceScale,
+          req.numInferenceSteps,
+        );
+
+        if (!isMountedRef.current) return;
+
+        if (result.retrying) {
+          setRetryMessage(result.message);
+          scheduleRetry();
+        } else {
+          // Success!
+          setIsRetrying(false);
+          setRetryMessage(null);
+          setIsLoading(false);
+          setResult(result.data);
+          onGeneration?.(result.data);
+        }
+      } catch (err) {
+        if (!isMountedRef.current) return;
+        setIsRetrying(false);
+        setRetryMessage(null);
+        setIsLoading(false);
+        setError(
+          err instanceof Error ? err.message : "Something went wrong",
+        );
+      }
+    }, delay);
+  }, [executeRequest, onGeneration]);
+
+  const cancelRetry = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    retryCountRef.current = 0;
+    setIsRetrying(false);
+    setRetryMessage(null);
+  }, []);
+
   const handleGenerate = useCallback(async (overridePrompt?: string) => {
+    // Cancel any pending retry
+    cancelRetry();
+
     const effectivePrompt = overridePrompt || prompt;
     if (!effectivePrompt.trim()) return;
 
@@ -40,31 +159,68 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
     setResult(null);
 
     try {
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await executeRequest(
+        effectivePrompt.trim(),
+        model,
+        guidanceScale,
+        numInferenceSteps,
+      );
+
+      if (!isMountedRef.current) return;
+
+      if (result.retrying) {
+        // Service is cold — start retry flow
+        setIsRetrying(true);
+        setRetryMessage(result.message);
+        retryCountRef.current = 1;
+        lastRequestRef.current = {
           prompt: effectivePrompt.trim(),
           model,
-          guidance_scale: guidanceScale,
-          num_inference_steps: numInferenceSteps,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate image");
+          guidanceScale,
+          numInferenceSteps,
+        };
+        // Schedule the next retry
+        const delay = RETRY_DELAYS[0];
+        retryTimerRef.current = setTimeout(async () => {
+          if (!isMountedRef.current || !lastRequestRef.current) return;
+          const req = lastRequestRef.current;
+          try {
+            const retryResult = await executeRequest(
+              req.prompt,
+              req.model,
+              req.guidanceScale,
+              req.numInferenceSteps,
+            );
+            if (!isMountedRef.current) return;
+            if (retryResult.retrying) {
+              setRetryMessage(retryResult.message);
+              scheduleRetry();
+            } else {
+              setIsRetrying(false);
+              setRetryMessage(null);
+              setIsLoading(false);
+              setResult(retryResult.data);
+              onGeneration?.(retryResult.data);
+            }
+          } catch (err) {
+            if (!isMountedRef.current) return;
+            setIsRetrying(false);
+            setRetryMessage(null);
+            setIsLoading(false);
+            setError(err instanceof Error ? err.message : "Something went wrong");
+          }
+        }, delay);
+      } else {
+        setResult(result.data);
+        onGeneration?.(result.data);
+        setIsLoading(false);
       }
-
-      setResult(data);
-      onGeneration?.(data);
     } catch (err) {
+      if (!isMountedRef.current) return;
       setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
       setIsLoading(false);
     }
-  }, [prompt, onGeneration, model, guidanceScale, numInferenceSteps]);
+  }, [prompt, onGeneration, model, guidanceScale, numInferenceSteps, executeRequest, cancelRetry, scheduleRetry]);
 
   const handleDownload = useCallback(
     (url?: string, id?: string) => {
@@ -238,7 +394,7 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
       </div>
 
       {/* Loading Skeleton — Shimmer Effect */}
-      {isLoading && !result && (
+      {(isLoading || isRetrying) && !result && !displayResult && (
         <div className="rounded-2xl overflow-hidden shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <div className="aspect-square relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-shimmer bg-[length:200%_100%]" />
@@ -249,6 +405,16 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Creating your image...</p>
+                {isRetrying && retryMessage && (
+                  <div className="mt-2 px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 max-w-sm">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-500 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-blue-700 dark:text-blue-300 text-xs text-left">{retryMessage}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

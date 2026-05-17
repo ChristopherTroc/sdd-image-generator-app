@@ -109,4 +109,16 @@ describe("POST /api/generate-image", () => {
     const body = await response.json();
     expect(body.error).toContain("unavailable");
   });
+
+  it("returns 202 with retrying status on 503 error", async () => {
+    mockGenerateImage.mockRejectedValueOnce(
+      new Error("Image generation failed (503): Model is loading"),
+    );
+
+    const response = await POST(createRequest({ prompt: "a cat" }));
+    expect(response.status).toBe(202);
+    const body = await response.json();
+    expect(body.status).toBe("retrying");
+    expect(body.message).toContain("starting up");
+  });
 });

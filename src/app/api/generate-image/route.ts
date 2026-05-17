@@ -32,6 +32,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to generate image";
+
+    // If the Hugging Face endpoint is cold (503 Service Unavailable),
+    // return 202 so the client can retry with informational feedback
+    if (message.includes("(503)")) {
+      console.error("Image generation service unavailable (cold start):", error);
+      return NextResponse.json(
+        {
+          status: "retrying",
+          message:
+            "The image generation service is starting up. This may take up to a minute. Please wait...",
+        },
+        { status: 202 },
+      );
+    }
+
     console.error("Image generation error:", error);
     return NextResponse.json(
       { error: message || "Failed to generate image. Please try again." },

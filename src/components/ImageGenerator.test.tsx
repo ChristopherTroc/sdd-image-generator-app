@@ -303,12 +303,12 @@ describe("ImageGenerator", () => {
       expect(screen.queryByText("Model")).not.toBeInTheDocument();
     });
 
-    it("renders model selector with FLUX.1-dev as default", async () => {
+    it("renders model selector with FLUX.1-schnell as default", async () => {
       const user = userEvent.setup();
       render(<ImageGenerator />);
       await user.click(screen.getByText("Settings"));
       const select = screen.getByRole("combobox");
-      expect(select).toHaveValue("black-forest-labs/FLUX.1-dev");
+      expect(select).toHaveValue("black-forest-labs/FLUX.1-schnell");
     });
 
     it("includes settings in the POST request", async () => {
@@ -326,16 +326,11 @@ describe("ImageGenerator", () => {
       const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
       await user.type(textarea, "a cat");
 
-      // Open settings and change model
-      await user.click(screen.getByText("Settings"));
-      const select = screen.getByRole("combobox");
-      await user.selectOptions(select, "stabilityai/stable-diffusion-3.5-large");
-
       await user.click(screen.getByRole("button", { name: /generate/i }));
       await screen.findByRole("img");
 
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(requestBody.model).toBe("stabilityai/stable-diffusion-3.5-large");
+      expect(requestBody.model).toBe("black-forest-labs/FLUX.1-schnell");
       expect(requestBody.guidance_scale).toBe(7.5);
       expect(requestBody.num_inference_steps).toBe(30);
     });
@@ -369,15 +364,16 @@ describe("ImageGenerator", () => {
       expect(screen.getByText(/better quality/)).toBeInTheDocument();
     });
 
-    it("model selector has two options", async () => {
+    it("model selector is disabled with FLUX.1-schnell", async () => {
       const user = userEvent.setup();
       render(<ImageGenerator />);
       await user.click(screen.getByText("Settings"));
       const select = screen.getByRole("combobox");
+      expect(select).toBeDisabled();
+      expect(select).toHaveValue("black-forest-labs/FLUX.1-schnell");
       const options = Array.from(select.querySelectorAll("option"));
-      expect(options.length).toBe(2);
-      expect(options[0].value).toBe("black-forest-labs/FLUX.1-dev");
-      expect(options[1].value).toBe("stabilityai/stable-diffusion-3.5-large");
+      expect(options.length).toBe(1);
+      expect(options[0].value).toBe("black-forest-labs/FLUX.1-schnell");
     });
   });
 });

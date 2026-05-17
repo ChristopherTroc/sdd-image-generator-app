@@ -18,6 +18,13 @@ const serverEnvSchema = {
   },
 } as const;
 
+const serverOptionalSchema = {
+  HF_INFERENCE_ENDPOINT: {
+    default: "https://api-inference.huggingface.co",
+    description: "Custom endpoint for Hugging Face Inference API (optional)",
+  },
+} as const;
+
 // Type for validated environment variables
 export type Env = {
   [K in keyof typeof envSchema]: string;
@@ -63,3 +70,15 @@ export function getServerEnv(): ServerEnv {
 
 // Export validated environment
 export const env = getEnv();
+
+// Validate and get optional server-only environment variables
+export function getServerOptionalEnv(): { HF_INFERENCE_ENDPOINT: string } {
+  const result: Record<string, string> = {};
+
+  for (const [key, config] of Object.entries(serverOptionalSchema)) {
+    const value = process.env[key];
+    result[key] = value || config.default;
+  }
+
+  return result as { HF_INFERENCE_ENDPOINT: string };
+}

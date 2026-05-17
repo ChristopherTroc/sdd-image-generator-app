@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 
 type PromptAssistantProps = {
   onSelectSuggestion: (suggestion: string) => void;
+  onAutoGenerate?: (suggestion: string) => void;
 };
 
 function PanelContent({
@@ -157,7 +158,7 @@ function PanelContent({
   );
 }
 
-export function PromptAssistant({ onSelectSuggestion }: PromptAssistantProps) {
+export function PromptAssistant({ onSelectSuggestion, onAutoGenerate }: PromptAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -204,11 +205,12 @@ export function PromptAssistant({ onSelectSuggestion }: PromptAssistantProps) {
   const handleSuggestionClick = useCallback(
     (suggestion: string) => {
       onSelectSuggestion(suggestion);
+      onAutoGenerate?.(suggestion);
       setIsOpen(false);
       setKeyword("");
       setSuggestions([]);
     },
-    [onSelectSuggestion],
+    [onSelectSuggestion, onAutoGenerate],
   );
 
   const handleToggle = useCallback(() => {
@@ -279,7 +281,7 @@ export function PromptAssistant({ onSelectSuggestion }: PromptAssistantProps) {
             <div className="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none">
               <div
                 ref={panelRef}
-                className="w-[calc(100%-2rem)] max-h-[90vh] pointer-events-auto bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden"
+                className="w-[calc(100%-2rem)] max-h-[90vh] pointer-events-auto bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden z-50"
                 onClick={(e) => e.stopPropagation()}
                 data-testid="prompt-assistant-panel"
               >
@@ -287,13 +289,16 @@ export function PromptAssistant({ onSelectSuggestion }: PromptAssistantProps) {
               </div>
             </div>
           ) : (
-            <div
-              ref={panelRef}
-              className="absolute bottom-full right-0 mb-2 w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/30 border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
-              data-testid="prompt-assistant-panel"
-            >
-              <PanelContent {...panelProps} onClose={handleToggle} />
-            </div>
+            <>
+              <div className="fixed inset-0 z-40" onClick={handleToggle} />
+              <div
+                ref={panelRef}
+                className="fixed bottom-auto left-auto right-4 top-1/2 -translate-y-1/2 w-80 z-50 bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/30 border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
+                data-testid="prompt-assistant-panel"
+              >
+                <PanelContent {...panelProps} onClose={handleToggle} />
+              </div>
+            </>
           )}
         </>
       )}

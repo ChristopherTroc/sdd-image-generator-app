@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ImageGenerator } from "@/components/ImageGenerator";
 import { GenerationHistory } from "@/components/GenerationHistory";
 
@@ -10,11 +10,40 @@ type GenerationItem = {
   id: string;
 };
 
+const STORAGE_KEY = "generation-history";
+
+function loadHistory(): GenerationItem[] {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(items: GenerationItem[]) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // sessionStorage unavailable (private browsing, quota)
+  }
+}
+
 export default function Home() {
-  const [generations, setGenerations] = useState<GenerationItem[]>([]);
+  const [generations, setGenerations] = useState<GenerationItem[]>(loadHistory);
+  const [selectedGeneration, setSelectedGeneration] = useState<GenerationItem | null>(null);
+
+  useEffect(() => {
+    saveHistory(generations);
+  }, [generations]);
 
   const handleGeneration = useCallback((result: GenerationItem) => {
-    setGenerations((prev) => [result, ...prev]);
+    setGenerations((prev) => {
+      const updated = [result, ...prev];
+      saveHistory(updated);
+      return updated;
+    });
+    setSelectedGeneration(null);
   }, []);
 
   const handleSelectPrompt = useCallback((prompt: string) => {
@@ -22,6 +51,10 @@ export default function Home() {
       new CustomEvent("set-prompt", { detail: prompt }),
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const handleSelectHistory = useCallback((item: GenerationItem) => {
+    setSelectedGeneration(item);
   }, []);
 
   return (
@@ -38,13 +71,14 @@ export default function Home() {
         </div>
 
         {/* Generator */}
-        <ImageGenerator onGeneration={handleGeneration} />
+        <ImageGenerator onGeneration={handleGeneration} forceResult={selectedGeneration} />
 
         {/* History */}
         <div className="mt-16 max-w-2xl mx-auto">
           <GenerationHistory
             generations={generations}
             onSelectPrompt={handleSelectPrompt}
+            onSelectHistory={handleSelectHistory}
           />
         </div>
       </div>

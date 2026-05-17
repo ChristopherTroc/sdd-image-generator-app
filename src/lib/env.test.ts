@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getEnv, getServerEnv } from "./env";
+import { getEnv, getServerEnv, getServerOptionalEnv } from "./env";
 
 describe("getEnv", () => {
   beforeEach(() => {
@@ -69,5 +69,25 @@ describe("getServerEnv", () => {
     expect(() => getServerEnv()).toThrow(
       "Missing required server environment variable: HUGGINGFACE_API_KEY",
     );
+  });
+});
+
+describe("getServerOptionalEnv", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns default endpoint when env var is not set", () => {
+    vi.stubEnv("HF_INFERENCE_ENDPOINT", "");
+
+    const result = getServerOptionalEnv();
+    expect(result.HF_INFERENCE_ENDPOINT).toBe("https://api-inference.huggingface.co");
+  });
+
+  it("returns custom endpoint when env var is set", () => {
+    vi.stubEnv("HF_INFERENCE_ENDPOINT", "https://custom-hf-proxy.example.com");
+
+    const result = getServerOptionalEnv();
+    expect(result.HF_INFERENCE_ENDPOINT).toBe("https://custom-hf-proxy.example.com");
   });
 });

@@ -1,27 +1,26 @@
-## ADDED Requirements
-
+## Purpose
+Text-to-image generation using Hugging Face Inference API, with configurable endpoint, settings panel, generation history, and dark mode support.
+## Requirements
 ### Requirement: Image generation API route
-The system SHALL provide a server-side API route for generating images via Hugging Face Inference API using the official `@huggingface/inference` SDK.
+The system SHALL provide a server-side API route for generating images via Hugging Face Inference API using direct HTTP fetch (not the `@huggingface/inference` SDK) for reliable custom endpoint support.
 
-#### Scenario: Generate image from text prompt
+#### Scenario: Generate image from text prompt (updated endpoint + raw fetch)
 - **GIVEN** a valid text prompt and a valid `HUGGINGFACE_API_KEY` environment variable
 - **WHEN** a `POST /api/generate-image` request is sent with `{ prompt: "a cat in space" }`
-- **THEN** the system SHALL return `{ image: string (base64-encoded image), prompt: string, id: string }` on success
+- **THEN** the system SHALL make a `fetch()` POST request to either:
+  - A custom endpoint URL from `HF_INFERENCE_ENDPOINT` env var, OR
+  - The standard Hugging Face Inference API at `https://api-inference.huggingface.co/models/{model}`
+- **AND** the system SHALL use `black-forest-labs/FLUX.1-schnell` as the default model instead of `FLUX.1-dev`
+- **AND** handle the response as follows:
+  - If the response `Content-Type` is `application/json` and the body is a plain base64 string → return as `data:image/png;base64,{string}`
+  - If the response `Content-Type` is `application/json` with `{ data: [{ b64_json: "..." }] }` → return as `data:image/jpeg;base64,{b64_json}`
+  - Otherwise treat the response as binary → convert to `data:image/png;base64,{blob}`
+- **AND** return `{ image: string (base64-encoded data URL), prompt: string, id: string }` on success
 
-#### Scenario: Missing prompt returns error
-- **GIVEN** an empty or missing prompt
+#### Scenario: Custom endpoint from env var
+- **GIVEN** the `HF_INFERENCE_ENDPOINT` environment variable is set to `https://custom-hf-proxy.example.com`
 - **WHEN** a `POST /api/generate-image` request is sent
-- **THEN** the response SHALL return a 400 error with `{ error: "Prompt is required" }`
-
-#### Scenario: Missing API key returns error
-- **GIVEN** the `HUGGINGFACE_API_KEY` environment variable is not set
-- **WHEN** a `POST /api/generate-image` request is sent
-- **THEN** the response SHALL return a 500 error with `{ error: "API key not configured" }`
-
-#### Scenario: Hugging Face API returns error
-- **GIVEN** the Hugging Face Inference API returns a non-200 status
-- **WHEN** a `POST /api/generate-image` request is sent
-- **THEN** the response SHALL return a 500 error with the error message from Hugging Face
+- **THEN** the system SHALL send the request directly to the custom endpoint URL instead of the standard Hugging Face API
 
 ### Requirement: ImageGenerator component
 The system SHALL provide an `ImageGenerator` component for text-to-image generation with a modern glassmorphism UI.
@@ -94,11 +93,12 @@ The system SHALL provide a collapsible settings panel with model selection and g
 - **WHEN** initially rendered
 - **THEN** the settings panel SHALL be collapsed/hidden, with a toggle button to expand it
 
-#### Scenario: Model selector switches between available models
+#### Scenario: Model selector shows fixed model
 - **GIVEN** the settings panel is expanded
-- **WHEN** the user opens the model selector dropdown
-- **THEN** it SHALL display at least two options: `black-forest-labs/FLUX.1-dev` and `stabilityai/stable-diffusion-3.5-large`
-- **AND** the default selected model SHALL be `black-forest-labs/FLUX.1-dev`
+- **WHEN** the user views the model selector
+- **THEN** it SHALL display a single disabled option: `black-forest-labs/FLUX.1-schnell`
+- **AND** the select element SHALL be disabled with a visual indicator (reduced opacity, cursor-not-allowed)
+- **AND** the default selected model SHALL be `black-forest-labs/FLUX.1-schnell`
 
 #### Scenario: Guidance scale slider adjusts value
 - **GIVEN** the settings panel is expanded
@@ -185,3 +185,84 @@ The system SHALL require a `HUGGINGFACE_API_KEY` environment variable for the AP
 - **GIVEN** the `HUGGINGFACE_API_KEY` environment variable is not set
 - **WHEN** the API route is called
 - **THEN** the response SHALL return a 500 error indicating the API key is not configured
+
+### Requirement: Endpoint environment variable
+The system SHALL read `HF_INFERENCE_ENDPOINT` from environment variables to configure the Hugging Face Inference API endpoint.
+
+#### Scenario: Default endpoint when env var is not set
+- **GIVEN** `HF_INFERENCE_ENDPOINT` is not set
+- **WHEN** the image generation is called
+- **THEN** the system SHALL use `https://api-inference.huggingface.co` as the default endpoint
+
+#### Scenario: Endpoint validation in env module
+- **GIVEN** `HF_INFERENCE_ENDPOINT` is set
+- **WHEN** the env module validates it
+- **THEN** it SHALL be available via `getServerOptionalEnv().HF_INFERENCE_ENDPOINT`
+
+### Requirement: Model selector disabled with single model
+The system SHALL display the model selector as a disabled dropdown with only `FLUX.1-schnell` as the available option.
+
+#### Scenario: Model selector is disabled
+- **GIVEN** the settings panel is expanded
+- **WHEN** the user views the model selector
+- **THEN** the select element SHALL be disabled (`disabled` attribute)
+- **AND** SHALL contain only one option: `black-forest-labs/FLUX.1-schnell`
+- **AND** SHALL have reduced opacity and `cursor-not-allowed` styling to indicate it cannot be changed
+
+#### Scenario: Model defaults to FLUX.1-schnell
+- **GIVEN** the `ImageGenerator` component renders
+- **WHEN** the settings panel is opened
+- **THEN** the model selector SHALL have `black-forest-labs/FLUX.1-schnell` selected by default
+- **AND** the POST request to `/api/generate-image` SHALL always include `model: "black-forest-labs/FLUX.1-schnell"`
+
+#### Scenario: Default endpoint when env var is not set
+- **GIVEN** `HF_INFERENCE_ENDPOINT` is not set
+- **WHEN** the image generation is called
+- **THEN** the system SHALL use `https://api-inference.huggingface.co` as the default endpoint
+
+#### Scenario: Endpoint validation in env module
+- **GIVEN** `HF_INFERENCE_ENDPOINT` is set
+- **WHEN` the env module validates it
+- **THEN** it SHALL be available via `getServerEnv().HF_INFERENCE_ENDPOINT`
+
+### Requirement: Prompt Assistant panel visibility
+The system SHALL ensure the PromptAssistant suggestion panel is fully visible and not overlapped by the generated image result.
+
+#### Scenario: Prompt Assistant panel renders above generated image
+- **GIVEN** a generated image is displayed
+- **WHEN** the PromptAssistant panel is opened
+- **THEN** the suggestion panel SHALL use `fixed` positioning (not `absolute`) with `z-50` to break out of its container's stacking context
+- **AND** all suggestion text SHALL be fully visible without being cut off by the image below
+
+### Requirement: Clickable generation history
+The system SHALL allow users to click on a history item to view that generation's image and prompt as the main result.
+
+#### Scenario: Clicking history item shows that image
+- **GIVEN** the generation history has at least one item
+- **WHEN** the user clicks on a history thumbnail
+- **THEN** the main result image SHALL be replaced with the clicked history item's image
+- **AND** the prompt text SHALL update to show the clicked history item's prompt
+
+#### Scenario: Clicking history item after a new generation
+- **GIVEN** a history item was clicked and is shown as the main result
+- **WHEN** the user generates a new image
+- **THEN** the main result SHALL update to the newly generated image
+
+### Requirement: Generation history persistence
+The system SHALL persist generation history across page navigations using `sessionStorage`.
+
+#### Scenario: History persists on page reload
+- **GIVEN** the user has generated images
+- **WHEN** the page is reloaded (same tab)
+- **THEN** the generation history SHALL be restored from `sessionStorage`
+
+#### Scenario: History clears on tab close
+- **GIVEN** the user has generated images
+- **WHEN** the tab is closed and a new tab is opened
+- **THEN** the generation history SHALL be empty
+
+#### Scenario: No errors when sessionStorage is unavailable
+- **GIVEN** `sessionStorage` is unavailable (private browsing, storage full)
+- **WHEN** the page loads
+- **THEN** history SHALL fall back to in-memory state without throwing errors
+

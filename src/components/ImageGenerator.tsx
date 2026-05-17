@@ -11,14 +11,14 @@ type GenerationResult = {
 
 type ImageGeneratorProps = {
   onGeneration?: (result: GenerationResult) => void;
+  forceResult?: GenerationResult | null;
 };
 
 const MODELS = [
-  { id: "black-forest-labs/FLUX.1-dev", label: "FLUX.1-dev" },
-  { id: "stabilityai/stable-diffusion-3.5-large", label: "SD3.5-large" },
+  { id: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" },
 ];
 
-export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
+export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
@@ -29,8 +29,11 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
   const [guidanceScale, setGuidanceScale] = useState(7.5);
   const [numInferenceSteps, setNumInferenceSteps] = useState(30);
 
-  const handleGenerate = useCallback(async () => {
-    if (!prompt.trim()) return;
+  const displayResult = forceResult || result;
+
+  const handleGenerate = useCallback(async (overridePrompt?: string) => {
+    const effectivePrompt = overridePrompt || prompt;
+    if (!effectivePrompt.trim()) return;
 
     setIsLoading(true);
     setError(null);
@@ -41,7 +44,7 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: effectivePrompt.trim(),
           model,
           guidance_scale: guidanceScale,
           num_inference_steps: numInferenceSteps,
@@ -65,8 +68,9 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
 
   const handleDownload = useCallback(
     (url?: string, id?: string) => {
-      const imageUrl = url || result?.imageUrl;
-      const imageId = id || result?.id;
+      const current = displayResult;
+      const imageUrl = url || current?.imageUrl;
+      const imageId = id || current?.id;
       if (!imageUrl || !imageId) return;
       const link = document.createElement("a");
       link.href = imageUrl;
@@ -75,7 +79,7 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
       link.click();
       document.body.removeChild(link);
     },
-    [result],
+    [displayResult],
   );
 
   // Listen for prompt selection from history
@@ -142,9 +146,9 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
           </button>
 
           <div className="flex items-center gap-1.5">
-            <PromptAssistant onSelectSuggestion={setPrompt} />
+            <PromptAssistant onSelectSuggestion={setPrompt} onAutoGenerate={(s) => handleGenerate(s)} />
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               disabled={isLoading || !prompt.trim()}
               className="px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg active:scale-[0.98]"
             >
@@ -178,8 +182,8 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
               </label>
               <select
                 value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200/80 dark:border-gray-600/80 bg-white/60 dark:bg-gray-800/60 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all backdrop-blur-sm"
+                disabled
+                className="w-full px-3 py-2 rounded-xl border border-gray-200/80 dark:border-gray-600/80 bg-white/60 dark:bg-gray-800/60 text-sm text-gray-900 dark:text-gray-100 opacity-75 cursor-not-allowed transition-all backdrop-blur-sm"
               >
                 {MODELS.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -261,7 +265,7 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
             <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
           </div>
           <button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             className="px-5 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
           >
             Try Again
@@ -270,15 +274,15 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
       )}
 
       {/* Result Image — Glassmorphism Card */}
-      {result && (
+      {displayResult && (
         <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-2xl overflow-hidden shadow-lg shadow-black/5 dark:shadow-black/20 border border-white/50 dark:border-gray-700/50 transition-all duration-300">
           <div
             className="relative group cursor-pointer"
             onClick={() => setShowModal(true)}
           >
             <img
-              src={result.imageUrl}
-              alt={result.prompt}
+              src={displayResult.imageUrl}
+              alt={displayResult.prompt}
               className="w-full h-auto"
               onError={() => setError("Failed to load generated image. Please try again.")}
             />
@@ -295,7 +299,7 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
           </div>
           <div className="flex items-center justify-between p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate mr-4">
-              Prompt: {result.prompt}
+              Prompt: {displayResult.prompt}
             </p>
             <button
               onClick={(e) => {
@@ -314,7 +318,7 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
       )}
 
       {/* Zoom Modal */}
-      {showModal && result && (
+      {showModal && displayResult && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 dark:bg-black/80 backdrop-blur-md"
           onClick={() => setShowModal(false)}
@@ -334,15 +338,15 @@ export function ImageGenerator({ onGeneration }: ImageGeneratorProps) {
             </button>
 
             <img
-              src={result.imageUrl}
-              alt={result.prompt}
+              src={displayResult.imageUrl}
+              alt={displayResult.prompt}
               className="rounded-2xl shadow-2xl max-w-full max-h-[85vh] object-contain"
             />
 
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent rounded-b-2xl">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-white/90 truncate mr-4 max-w-[70%]">
-                  {result.prompt}
+                  {displayResult.prompt}
                 </p>
                 <button
                   onClick={() => handleDownload()}

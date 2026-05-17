@@ -24,7 +24,7 @@ All change artifacts are stored under `openspec/changes/archive/` with synced sp
 
 ### 🎨 AI Image Generation
 - Generate images from detailed text descriptions
-- **Model selector**: Choose between `FLUX.1-dev` (open weights) and `SD3.5-large` (higher quality)
+- **Model**: Uses `FLUX.1-schnell` (fast inference, fixed) — configurable via `HF_INFERENCE_ENDPOINT` env var for custom endpoints
 - **Adjustable settings**: Control guidance scale and inference steps for fine-tuned results
 - **Generation history**: Browse and re-use previous prompts via a thumbnail grid
 - **Click-to-zoom modal**: View generated images in full-screen with download capability
@@ -68,7 +68,7 @@ All change artifacts are stored under `openspec/changes/archive/` with synced sp
    ```
 
 3. **Accept model terms (one-time):**
-   - [FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) — click "Agree and access repository"
+   - [FLUX.1-schnell](https://huggingface.co/black-forest-labs/FLUX.1-schnell) — fast inference model (default)
    - [SD3.5-large](https://huggingface.co/stabilityai/stable-diffusion-3.5-large) — requires Pro subscription
 
 4. **Start the development server:**
@@ -142,7 +142,7 @@ src/
 - **CSS custom utilities** — Shimmer animation, glassmorphism effects
 
 ### AI Integration
-- **Hugging Face Inference API** — Text-to-image generation (FLUX.1-dev, SD3.5-large)
+- **Hugging Face Inference API** — Text-to-image generation (FLUX.1-schnell)
 - **DeepSeek V4 Flash** — LLM-powered prompt suggestions via OpenAI SDK
 
 ### Testing

@@ -97,6 +97,29 @@ describe("PromptAssistant", () => {
     expect(onSelect).toHaveBeenCalledWith("A majestic cat");
   });
 
+  it("calls onAutoGenerate when a suggestion is clicked", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        suggestions: ["A majestic cat"],
+        keyword: "cat",
+      }),
+    });
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const onAutoGenerate = vi.fn();
+    render(<PromptAssistant onSelectSuggestion={onSelect} onAutoGenerate={onAutoGenerate} />);
+    await user.click(screen.getByTestId("prompt-assistant-toggle"));
+    const input = screen.getByTestId("prompt-assistant-input");
+    await user.type(input, "cat");
+    await user.click(screen.getByTestId("prompt-assistant-generate"));
+
+    const suggestion = await screen.findByText("A majestic cat");
+    await user.click(suggestion);
+    expect(onSelect).toHaveBeenCalledWith("A majestic cat");
+    expect(onAutoGenerate).toHaveBeenCalledWith("A majestic cat");
+  });
+
   it("shows error state with retry button", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,

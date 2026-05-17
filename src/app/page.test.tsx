@@ -7,6 +7,7 @@ global.fetch = mockFetch;
 
 beforeEach(() => {
   mockFetch.mockReset();
+  window.sessionStorage.clear();
 });
 
 describe("Home", () => {

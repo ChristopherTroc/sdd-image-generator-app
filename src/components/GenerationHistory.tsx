@@ -9,11 +9,13 @@ type GenerationItem = {
 type GenerationHistoryProps = {
   generations: GenerationItem[];
   onSelectPrompt: (prompt: string) => void;
+  onSelectHistory?: (item: GenerationItem) => void;
 };
 
 export function GenerationHistory({
   generations,
   onSelectPrompt,
+  onSelectHistory,
 }: GenerationHistoryProps) {
   if (generations.length === 0) {
     return (
@@ -40,7 +42,10 @@ export function GenerationHistory({
         {generations.map((gen) => (
           <button
             key={gen.id}
-            onClick={() => onSelectPrompt(gen.prompt)}
+            onClick={() => {
+              onSelectPrompt(gen.prompt);
+              onSelectHistory?.(gen);
+            }}
             className="group relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors text-left"
             title={`Re-use prompt: ${gen.prompt}`}
           >

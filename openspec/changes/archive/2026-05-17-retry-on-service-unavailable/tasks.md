@@ -20,6 +20,6 @@
 
 ## 4. Update Specs & Verify
 
-- [ ] 4.1 Update `openspec/specs/image-generator/spec.md` — sync retry requirements to main spec
+- [x] 4.1 Update `openspec/specs/image-generator/spec.md` — sync retry requirements to main spec
 - [x] 4.2 Run `npm run test` and verify all tests pass
 - [x] 4.3 Run `npm run build` and verify no build errors

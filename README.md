@@ -18,7 +18,7 @@ This project follows **Spec-Driven Development (SDD)** using the [**OpenSpec**](
 
 All change artifacts are stored under `openspec/changes/archive/` with synced specifications in `openspec/specs/`.
 
-> **Cost & Time**: The development of this project was assisted by **DeepSeek V4 Flash** (via GitHub Copilot), with approximately **$12 USD** in total AI consumption. The human effort was approximately **1 day (~6 hours)** of work.
+> **Cost & Time**: The development of this project was assisted by **DeepSeek V4 Flash** (via GitHub Copilot), with approximately **$15 USD aprox** in total AI consumption. The human effort was approximately **1 day (~8 hours aprox)** of work.
 
 ## Features
 

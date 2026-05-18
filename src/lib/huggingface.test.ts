@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { generateImage } from "./huggingface";
 
 function mockFetchOk(bytes: number[], mime = "image/png"): void {
-  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-    new Response(new Blob([new Uint8Array(bytes)]), {
-      status: 200,
-      headers: { "Content-Type": mime },
-    })
-  );
+  const buffer = Buffer.from(bytes);
+  const response = new Response(buffer, {
+    status: 200,
+    headers: { "Content-Type": mime },
+  });
+  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(response);
 }
 
 function mockFetchError(status: number, body: string): void {
@@ -39,14 +39,14 @@ describe("generateImage", () => {
     expect(result).toMatch(/^data:image\/png;base64,/);
   });
 
-  it("calls the standard HF API with the default model when no endpoint is set", async () => {
+  it("calls the standard HF API with the default SD model when no endpoint is set", async () => {
     const pngBytes = [137, 80, 78, 71];
     mockFetchOk(pngBytes);
 
     await generateImage("a cat");
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+      "https://api-inference.huggingface.co/models/stable-diffusion-xl-base-1-0-hnm",
       expect.objectContaining({
         method: "POST",
         headers: {
@@ -80,7 +80,7 @@ describe("generateImage", () => {
     );
   });
 
-  it("returns a data URL with default model when no options provided", async () => {
+  it("returns a data URL with default SD model when no options provided", async () => {
     const pngBytes = [137, 80, 78, 71];
     mockFetchOk(pngBytes);
 
@@ -88,7 +88,7 @@ describe("generateImage", () => {
 
     expect(result).toMatch(/^data:image\/png;base64,/);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("black-forest-labs/FLUX.1-schnell"),
+      expect.stringContaining("stable-diffusion-xl-base-1-0-hnm"),
       expect.any(Object)
     );
   });
@@ -122,17 +122,44 @@ describe("generateImage", () => {
     );
   });
 
-  it("uses custom endpoint URL when HF_INFERENCE_ENDPOINT is set", async () => {
+  it("uses SD custom endpoint by default when HF_STABLE_DIFFUSION_ENDPOINT is set", async () => {
     const pngBytes = [137, 80, 78, 71];
     mockFetchOk(pngBytes);
 
-    // Temporarily override env mock by setting env directly
-    vi.stubEnv("HF_INFERENCE_ENDPOINT", "https://custom.endpoint.com/v1");
+    vi.stubEnv("HF_STABLE_DIFFUSION_ENDPOINT", "https://sd-custom.endpoint.com/v1");
 
     await generateImage("a cat");
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "https://custom.endpoint.com/v1",
+      "https://sd-custom.endpoint.com/v1",
+      expect.any(Object)
+    );
+  });
+
+  it("uses FLUX endpoint when explicitly requesting FLUX model", async () => {
+    const pngBytes = [137, 80, 78, 71];
+    mockFetchOk(pngBytes);
+
+    vi.stubEnv("HF_FLUX_ENDPOINT", "https://flux-custom.endpoint.com/v1");
+
+    await generateImage("a cat", { model: "black-forest-labs/FLUX.1-schnell" });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://flux-custom.endpoint.com/v1",
+      expect.any(Object)
+    );
+  });
+
+  it("falls back to standard API for default SD model without endpoint env var", async () => {
+    const pngBytes = [137, 80, 78, 71];
+    mockFetchOk(pngBytes);
+
+    vi.stubEnv("HF_STABLE_DIFFUSION_ENDPOINT", "");
+
+    await generateImage("a cat");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://api-inference.huggingface.co/models/stable-diffusion-xl-base-1-0-hnm",
       expect.any(Object)
     );
   });

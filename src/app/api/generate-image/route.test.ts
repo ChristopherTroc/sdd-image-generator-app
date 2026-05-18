@@ -29,6 +29,7 @@ function createRequest(body: unknown) {
 describe("POST /api/generate-image", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   it("returns 400 when prompt is missing", async () => {

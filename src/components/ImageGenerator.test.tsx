@@ -328,12 +328,12 @@ describe("ImageGenerator", () => {
       expect(screen.queryByText("Model")).not.toBeInTheDocument();
     });
 
-    it("renders model selector with FLUX.1-schnell as default", async () => {
+    it("renders model selector with Stable Diffusion XL Base as default", async () => {
       const user = userEvent.setup();
       render(<ImageGenerator />);
       await user.click(screen.getByText("Settings"));
       const select = screen.getByRole("combobox");
-      expect(select).toHaveValue("black-forest-labs/FLUX.1-schnell");
+      expect(select).toHaveValue("stable-diffusion-xl-base-1-0-hnm");
     });
 
     it("includes settings in the POST request", async () => {
@@ -357,7 +357,7 @@ describe("ImageGenerator", () => {
       await screen.findByRole("img");
 
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(requestBody.model).toBe("black-forest-labs/FLUX.1-schnell");
+      expect(requestBody.model).toBe("stable-diffusion-xl-base-1-0-hnm");
       expect(requestBody.guidance_scale).toBe(7.5);
       expect(requestBody.num_inference_steps).toBe(30);
     });
@@ -393,16 +393,26 @@ describe("ImageGenerator", () => {
       expect(screen.getByText(/better quality/)).toBeInTheDocument();
     });
 
-    it("model selector is disabled with FLUX.1-schnell", async () => {
+    it("model selector has two options with SD as default", async () => {
       const user = userEvent.setup();
       render(<ImageGenerator />);
       await user.click(screen.getByText("Settings"));
       const select = screen.getByRole("combobox");
-      expect(select).toBeDisabled();
-      expect(select).toHaveValue("black-forest-labs/FLUX.1-schnell");
+      expect(select).toBeEnabled();
+      expect(select).toHaveValue("stable-diffusion-xl-base-1-0-hnm");
       const options = Array.from(select.querySelectorAll("option"));
-      expect(options.length).toBe(1);
-      expect(options[0].value).toBe("black-forest-labs/FLUX.1-schnell");
+      expect(options.length).toBe(2);
+      expect(options[0].value).toBe("stable-diffusion-xl-base-1-0-hnm");
+      expect(options[1].value).toBe("black-forest-labs/FLUX.1-schnell");
+    });
+
+    it("switches model to Stable Diffusion XL when selected", async () => {
+      const user = userEvent.setup();
+      render(<ImageGenerator />);
+      await user.click(screen.getByText("Settings"));
+      const select = screen.getByRole("combobox");
+      await user.selectOptions(select, "stable-diffusion-xl-base-1-0-hnm");
+      expect(select).toHaveValue("stable-diffusion-xl-base-1-0-hnm");
     });
   });
 

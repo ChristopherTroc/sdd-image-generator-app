@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       imageUrl,
       prompt: prompt.trim(),
-      model: model || "black-forest-labs/FLUX.1-schnell",
+      model: model || "stable-diffusion-xl-base-1-0-hnm",
       guidance_scale: guidance_scale || 7.5,
       num_inference_steps: num_inference_steps || 30,
       id,

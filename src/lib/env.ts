@@ -20,9 +20,11 @@ const serverEnvSchema = {
 } as const;
 
 const serverOptionalSchema = {
-  HF_INFERENCE_ENDPOINT: {
-    default: "https://api-inference.huggingface.co",
-    description: "Custom endpoint for Hugging Face Inference API (optional)",
+  HF_FLUX_ENDPOINT: {
+    description: "Custom endpoint for black-forest-labs/FLUX.1-schnell private inference instance (optional)",
+  },
+  HF_STABLE_DIFFUSION_ENDPOINT: {
+    description: "Custom endpoint for stable-diffusion-xl-base-1-0-hnm private inference instance (optional)",
   },
 } as const;
 
@@ -73,13 +75,15 @@ export function getServerEnv(): ServerEnv {
 export const env = getEnv();
 
 // Validate and get optional server-only environment variables
-export function getServerOptionalEnv(): { HF_INFERENCE_ENDPOINT: string } {
-  const result: Record<string, string> = {};
+export function getServerOptionalEnv(): { HF_FLUX_ENDPOINT?: string; HF_STABLE_DIFFUSION_ENDPOINT?: string } {
+  const result: Record<string, string | undefined> = {};
 
-  for (const [key, config] of Object.entries(serverOptionalSchema)) {
+  for (const [key] of Object.entries(serverOptionalSchema)) {
     const value = process.env[key];
-    result[key] = value || config.default;
+    if (value) {
+      result[key] = value;
+    }
   }
 
-  return result as { HF_INFERENCE_ENDPOINT: string };
+  return result as { HF_FLUX_ENDPOINT?: string; HF_STABLE_DIFFUSION_ENDPOINT?: string };
 }

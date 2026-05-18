@@ -27,6 +27,7 @@ function createRequest(body: unknown) {
 describe("POST /api/generate-prompts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   it("returns 400 when keyword is missing", async () => {

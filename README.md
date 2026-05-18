@@ -24,8 +24,8 @@ All change artifacts are stored under `openspec/changes/archive/` with synced sp
 
 ### 🎨 AI Image Generation
 - Generate images from detailed text descriptions
-- **Model**: Uses `FLUX.1-schnell` (fast inference, fixed) — configurable via `HF_INFERENCE_ENDPOINT` env var for custom endpoints
-- **Adjustable settings**: Control guidance scale and inference steps for fine-tuned results
+- **Models**: Choose between `Stable Diffusion XL Base` (default) and `FLUX.1-schnell` — each with its own dedicated endpoint via `HF_STABLE_DIFFUSION_ENDPOINT` and `HF_FLUX_ENDPOINT` env vars
+- **Adjustable settings**: Control model selection, guidance scale, and inference steps for fine-tuned results
 - **Generation history**: Browse and re-use previous prompts via a thumbnail grid
 - **Click-to-zoom modal**: View generated images in full-screen with download capability
 - **Glassmorphism UI**: Modern, polished interface with dark mode support
@@ -68,7 +68,8 @@ All change artifacts are stored under `openspec/changes/archive/` with synced sp
    ```
 
 3. **Accept model terms (one-time):**
-   - [FLUX.1-schnell](https://huggingface.co/black-forest-labs/FLUX.1-schnell) — fast inference model (default)
+   - [FLUX.1-schnell](https://huggingface.co/black-forest-labs/FLUX.1-schnell) — fast inference model
+   - [Stable Diffusion XL Base](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) — high-quality model (default)
 
 4. **Start the development server:**
    ```bash
@@ -80,7 +81,7 @@ All change artifacts are stored under `openspec/changes/archive/` with synced sp
 ## Usage
 
 1. **Write a prompt** in the textarea describing the image you want
-2. **Adjust settings** (optional): model, guidance scale, inference steps
+2. **Adjust settings** (optional): model (Stable Diffusion XL Base by default), guidance scale, inference steps
 3. Click **Generate** and wait for the AI to create your image
 4. **Click the image** to open the zoom modal (full-screen view)
 5. **Download** the image from the card or the modal
@@ -144,7 +145,7 @@ src/
 - **CSS custom utilities** — Shimmer animation, glassmorphism effects
 
 ### AI Integration
-- **Hugging Face Inference API** — Text-to-image generation (FLUX.1-schnell)
+- **Hugging Face Inference API** — Text-to-image generation (Stable Diffusion XL Base + FLUX.1-schnell)
 - **DeepSeek V4 Flash** — LLM-powered prompt suggestions via OpenAI SDK
 
 ### Testing
@@ -163,7 +164,8 @@ src/
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `HUGGINGFACE_API_KEY` | Yes | — | Hugging Face API token for inference |
-| `HF_INFERENCE_ENDPOINT` | No | `https://api-inference.huggingface.co` | Custom endpoint for dedicated inference or proxy |
+| `HF_FLUX_ENDPOINT` | No | — | Custom endpoint for FLUX.1-schnell private inference instance |
+| `HF_STABLE_DIFFUSION_ENDPOINT` | No | — | Custom endpoint for Stable Diffusion XL Base private inference instance |
 | `NEXT_PUBLIC_API_URL` | No | `http://localhost:3000/api` | API base URL for client requests |
 
 Copy `.env.example` to `.env.local` and fill in the required values.

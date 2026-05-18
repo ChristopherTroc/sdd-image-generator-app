@@ -1,5 +1,11 @@
 const HF_API_BASE = "https://api-inference.huggingface.co";
-const DEFAULT_MODEL = "black-forest-labs/FLUX.1-schnell";
+const DEFAULT_MODEL = "stable-diffusion-xl-base-1-0-hnm";
+
+// Mapping from model ID to environment variable name for custom endpoint
+const MODEL_ENDPOINTS: Record<string, string> = {
+  "stable-diffusion-xl-base-1-0-hnm": "HF_STABLE_DIFFUSION_ENDPOINT",
+  "black-forest-labs/FLUX.1-schnell": "HF_FLUX_ENDPOINT",
+};
 
 type GenerateOptions = {
   model?: string;
@@ -30,9 +36,11 @@ export async function generateImage(prompt: string, options?: GenerateOptions): 
   const model = options?.model || DEFAULT_MODEL;
 
   // Determine the request URL:
-  // - Use custom endpoint URL if HF_INFERENCE_ENDPOINT env var is explicitly set
+  // - Look up model-specific endpoint env var (e.g., HF_FLUX_ENDPOINT for FLUX)
+  // - If that env var is explicitly set, use it as the endpoint URL
   // - Otherwise, use the standard HF API URL with the model path
-  const customEndpoint = process.env.HF_INFERENCE_ENDPOINT;
+  const endpointEnvVar = MODEL_ENDPOINTS[model];
+  const customEndpoint = endpointEnvVar ? process.env[endpointEnvVar] : undefined;
   const url = customEndpoint || `${HF_API_BASE}/models/${model}`;
 
   const params: Record<string, unknown> = {};

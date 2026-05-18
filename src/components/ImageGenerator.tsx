@@ -15,7 +15,10 @@ type ImageGeneratorProps = {
   forceResult?: GenerationResult | null;
 };
 
-const MODELS = [{ id: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" }];
+const MODELS = [
+  { id: "stable-diffusion-xl-base-1-0-hnm", label: "Stable Diffusion XL Base" },
+  { id: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" },
+];
 
 export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
@@ -23,7 +26,7 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [model] = useState(MODELS[0].id);
+  const [model, setModel] = useState(MODELS[0].id);
   const [guidanceScale, setGuidanceScale] = useState(7.5);
   const [numInferenceSteps, setNumInferenceSteps] = useState(30);
 
@@ -208,8 +211,8 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
               </label>
               <select
                 value={model}
-                disabled
-                className="w-full px-3 py-2 rounded-xl border border-gray-200/80 dark:border-gray-600/80 bg-white/60 dark:bg-gray-800/60 text-sm text-gray-900 dark:text-gray-100 opacity-75 cursor-not-allowed transition-all backdrop-blur-sm"
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200/80 dark:border-gray-600/80 bg-white/60 dark:bg-gray-800/60 text-sm text-gray-900 dark:text-gray-100 transition-all backdrop-blur-sm"
               >
                 {MODELS.map((m) => (
                   <option key={m.id} value={m.id}>

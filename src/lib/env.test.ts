@@ -77,17 +77,33 @@ describe("getServerOptionalEnv", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns default endpoint when env var is not set", () => {
-    vi.stubEnv("HF_INFERENCE_ENDPOINT", "");
+  it("returns empty when HF_FLUX_ENDPOINT is not set", () => {
+    vi.stubEnv("HF_FLUX_ENDPOINT", "");
 
     const result = getServerOptionalEnv();
-    expect(result.HF_INFERENCE_ENDPOINT).toBe("https://api-inference.huggingface.co");
+    expect(result.HF_FLUX_ENDPOINT).toBeUndefined();
   });
 
-  it("returns custom endpoint when env var is set", () => {
-    vi.stubEnv("HF_INFERENCE_ENDPOINT", "https://custom-hf-proxy.example.com");
+  it("returns custom FLUX endpoint when env var is set", () => {
+    vi.stubEnv("HF_FLUX_ENDPOINT", "https://flux-private-endpoint.hf.space");
 
     const result = getServerOptionalEnv();
-    expect(result.HF_INFERENCE_ENDPOINT).toBe("https://custom-hf-proxy.example.com");
+    expect(result.HF_FLUX_ENDPOINT).toBe("https://flux-private-endpoint.hf.space");
+  });
+
+  it("returns custom Stable Diffusion endpoint when env var is set", () => {
+    vi.stubEnv("HF_STABLE_DIFFUSION_ENDPOINT", "https://sd-private-endpoint.hf.space");
+
+    const result = getServerOptionalEnv();
+    expect(result.HF_STABLE_DIFFUSION_ENDPOINT).toBe("https://sd-private-endpoint.hf.space");
+  });
+
+  it("returns both endpoints when both are set", () => {
+    vi.stubEnv("HF_FLUX_ENDPOINT", "https://flux-endpoint.hf.space");
+    vi.stubEnv("HF_STABLE_DIFFUSION_ENDPOINT", "https://sd-endpoint.hf.space");
+
+    const result = getServerOptionalEnv();
+    expect(result.HF_FLUX_ENDPOINT).toBe("https://flux-endpoint.hf.space");
+    expect(result.HF_STABLE_DIFFUSION_ENDPOINT).toBe("https://sd-endpoint.hf.space");
   });
 });

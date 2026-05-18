@@ -14,15 +14,13 @@ describe("Home", () => {
   it("renders the page title and description", () => {
     render(<Home />);
     expect(screen.getByText("AI Image Generator")).toBeInTheDocument();
-    expect(
-      screen.getByText("Describe any image and let AI bring it to life"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Describe any image and let AI bring it to life")).toBeInTheDocument();
   });
 
   it("renders the ImageGenerator textarea", () => {
     render(<Home />);
     expect(
-      screen.getByPlaceholderText("Describe the image you want to generate in detail..."),
+      screen.getByPlaceholderText("Describe the image you want to generate in detail...")
     ).toBeInTheDocument();
   });
 
@@ -43,7 +41,9 @@ describe("Home", () => {
     });
 
     render(<Home />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
     await screen.findAllByRole("img");
@@ -67,7 +67,9 @@ describe("Home", () => {
     });
 
     render(<Home />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
 

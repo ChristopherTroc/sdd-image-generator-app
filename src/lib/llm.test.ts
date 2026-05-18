@@ -28,8 +28,8 @@ describe("generatePromptSuggestions", () => {
   it("returns suggestions for a valid keyword", async () => {
     mockCreate.mockResolvedValueOnce(
       makeResponse(
-        '1. "A majestic cat lounging in a sunbeam"\n2. "A cyberpunk cat with neon glowing eyes"',
-      ),
+        '1. "A majestic cat lounging in a sunbeam"\n2. "A cyberpunk cat with neon glowing eyes"'
+      )
     );
 
     const result = await generatePromptSuggestions("cat");
@@ -39,10 +39,7 @@ describe("generatePromptSuggestions", () => {
   });
 
   it("limits to 5 suggestions", async () => {
-    const lines = Array.from(
-      { length: 7 },
-      (_, i) => `${i + 1}. "Suggestion ${i + 1}"`,
-    );
+    const lines = Array.from({ length: 7 }, (_, i) => `${i + 1}. "Suggestion ${i + 1}"`);
     mockCreate.mockResolvedValueOnce(makeResponse(lines.join("\n")));
 
     const result = await generatePromptSuggestions("test");
@@ -50,31 +47,25 @@ describe("generatePromptSuggestions", () => {
   });
 
   it("throws an error when keyword is empty", async () => {
-    await expect(generatePromptSuggestions("")).rejects.toThrow(
-      "Keyword is required",
-    );
+    await expect(generatePromptSuggestions("")).rejects.toThrow("Keyword is required");
   });
 
   it("throws an error when keyword is only whitespace", async () => {
-    await expect(generatePromptSuggestions("   ")).rejects.toThrow(
-      "Keyword is required",
-    );
+    await expect(generatePromptSuggestions("   ")).rejects.toThrow("Keyword is required");
   });
 
   it("throws an error when API key is missing", async () => {
     vi.stubEnv("HUGGINGFACE_API_KEY", "");
 
     await expect(generatePromptSuggestions("cat")).rejects.toThrow(
-      "HUGGINGFACE_API_KEY is not configured",
+      "HUGGINGFACE_API_KEY is not configured"
     );
   });
 
   it("throws an error when OpenAI API returns an error", async () => {
     mockCreate.mockRejectedValueOnce(new Error("Model unavailable"));
 
-    await expect(generatePromptSuggestions("cat")).rejects.toThrow(
-      "Model unavailable",
-    );
+    await expect(generatePromptSuggestions("cat")).rejects.toThrow("Model unavailable");
   });
 
   it("calls OpenAI with DeepSeek model and correct params", async () => {
@@ -94,7 +85,7 @@ describe("generatePromptSuggestions", () => {
         ]),
         temperature: 0.8,
         max_tokens: 500,
-      }),
+      })
     );
   });
 
@@ -115,7 +106,7 @@ describe("generatePromptSuggestions", () => {
     // OpenAI constructor captures baseURL — check it was passed
     // by verifying the create call succeeds with correct model
     expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "deepseek-ai/DeepSeek-V4-Flash:novita" }),
+      expect.objectContaining({ model: "deepseek-ai/DeepSeek-V4-Flash:novita" })
     );
   });
 });

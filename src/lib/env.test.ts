@@ -27,7 +27,7 @@ describe("getEnv", () => {
     getEnv();
 
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Missing environment variable: NEXT_PUBLIC_API_URL"),
+      expect.stringContaining("Missing environment variable: NEXT_PUBLIC_API_URL")
     );
     warnSpy.mockRestore();
   });
@@ -59,7 +59,7 @@ describe("getServerEnv", () => {
     vi.stubEnv("HUGGINGFACE_API_KEY", "");
 
     expect(() => getServerEnv()).toThrow(
-      "Missing required server environment variable: HUGGINGFACE_API_KEY",
+      "Missing required server environment variable: HUGGINGFACE_API_KEY"
     );
   });
 
@@ -67,7 +67,7 @@ describe("getServerEnv", () => {
     vi.stubEnv("HUGGINGFACE_API_KEY", "");
 
     expect(() => getServerEnv()).toThrow(
-      "Missing required server environment variable: HUGGINGFACE_API_KEY",
+      "Missing required server environment variable: HUGGINGFACE_API_KEY"
     );
   });
 });

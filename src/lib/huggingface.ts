@@ -17,10 +17,7 @@ async function blobToBase64(blob: Blob): Promise<string> {
   return btoa(binary);
 }
 
-export async function generateImage(
-  prompt: string,
-  options?: GenerateOptions,
-): Promise<string> {
+export async function generateImage(prompt: string, options?: GenerateOptions): Promise<string> {
   if (!prompt || !prompt.trim()) {
     throw new Error("Prompt is required");
   }
@@ -40,7 +37,8 @@ export async function generateImage(
 
   const params: Record<string, unknown> = {};
   if (options?.guidance_scale !== undefined) params.guidance_scale = options.guidance_scale;
-  if (options?.num_inference_steps !== undefined) params.num_inference_steps = options.num_inference_steps;
+  if (options?.num_inference_steps !== undefined)
+    params.num_inference_steps = options.num_inference_steps;
 
   const body: Record<string, unknown> = { inputs: prompt.trim() };
   if (Object.keys(params).length > 0) {
@@ -58,9 +56,7 @@ export async function generateImage(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(
-      `Image generation failed (${response.status}): ${errorBody}`,
-    );
+    throw new Error(`Image generation failed (${response.status}): ${errorBody}`);
   }
 
   const contentType = response.headers.get("Content-Type") || "";
@@ -75,17 +71,13 @@ export async function generateImage(
     }
 
     // Case 2: Standard HF format { data: [{ b64_json: "..." }] }
-    if (
-      json.data &&
-      Array.isArray(json.data) &&
-      json.data[0]?.b64_json
-    ) {
+    if (json.data && Array.isArray(json.data) && json.data[0]?.b64_json) {
       return `data:image/jpeg;base64,${json.data[0].b64_json}`;
     }
 
     // Unrecognized JSON format
     throw new Error(
-      `Unexpected JSON response from image API: ${JSON.stringify(json).slice(0, 200)}`,
+      `Unexpected JSON response from image API: ${JSON.stringify(json).slice(0, 200)}`
     );
   }
 

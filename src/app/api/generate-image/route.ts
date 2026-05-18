@@ -7,10 +7,7 @@ export async function POST(request: NextRequest) {
     const { prompt, model, guidance_scale, num_inference_steps } = body;
 
     if (!prompt || !prompt.trim()) {
-      return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
     const imageUrl = await generateImage(prompt.trim(), {
@@ -30,8 +27,7 @@ export async function POST(request: NextRequest) {
       id,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to generate image";
+    const message = error instanceof Error ? error.message : "Failed to generate image";
 
     // If the Hugging Face endpoint is cold (503 Service Unavailable),
     // return 202 so the client can retry with informational feedback
@@ -43,14 +39,14 @@ export async function POST(request: NextRequest) {
           message:
             "The image generation service is starting up. This may take up to a minute. Please wait...",
         },
-        { status: 202 },
+        { status: 202 }
       );
     }
 
     console.error("Image generation error:", error);
     return NextResponse.json(
       { error: message || "Failed to generate image. Please try again." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

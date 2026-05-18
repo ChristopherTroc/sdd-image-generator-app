@@ -56,9 +56,7 @@ describe("POST /api/generate-prompts", () => {
   });
 
   it("returns 500 when LLM fails", async () => {
-    mockGenerateSuggestions.mockRejectedValueOnce(
-      new Error("Model unavailable"),
-    );
+    mockGenerateSuggestions.mockRejectedValueOnce(new Error("Model unavailable"));
 
     const response = await POST(createRequest({ keyword: "cat" }));
     expect(response.status).toBe(500);

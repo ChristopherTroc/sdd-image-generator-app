@@ -46,7 +46,8 @@ describe("POST /api/generate-image", () => {
   });
 
   it("returns image as base64 data URL on success", async () => {
-    const fakeDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    const fakeDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
     mockGenerateImage.mockResolvedValueOnce(fakeDataUrl);
 
     const response = await POST(createRequest({ prompt: "a cat" }));
@@ -59,9 +60,7 @@ describe("POST /api/generate-image", () => {
   });
 
   it("returns 500 when image generation fails", async () => {
-    mockGenerateImage.mockRejectedValueOnce(
-      new Error("Failed to generate image"),
-    );
+    mockGenerateImage.mockRejectedValueOnce(new Error("Failed to generate image"));
 
     const response = await POST(createRequest({ prompt: "a cat" }));
     expect(response.status).toBe(500);
@@ -100,9 +99,7 @@ describe("POST /api/generate-image", () => {
   });
 
   it("passes the error message through", async () => {
-    mockGenerateImage.mockRejectedValueOnce(
-      new Error("Model unavailable, please retry"),
-    );
+    mockGenerateImage.mockRejectedValueOnce(new Error("Model unavailable, please retry"));
 
     const response = await POST(createRequest({ prompt: "a cat" }));
     expect(response.status).toBe(500);
@@ -112,7 +109,7 @@ describe("POST /api/generate-image", () => {
 
   it("returns 202 with retrying status on 503 error", async () => {
     mockGenerateImage.mockRejectedValueOnce(
-      new Error("Image generation failed (503): Model is loading"),
+      new Error("Image generation failed (503): Model is loading")
     );
 
     const response = await POST(createRequest({ prompt: "a cat" }));

@@ -7,10 +7,7 @@ export async function POST(request: NextRequest) {
     const { keyword } = body;
 
     if (!keyword || !keyword.trim()) {
-      return NextResponse.json(
-        { error: "Keyword is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Keyword is required" }, { status: 400 });
     }
 
     const result = await generatePromptSuggestions(keyword.trim());
@@ -20,12 +17,11 @@ export async function POST(request: NextRequest) {
       keyword: keyword.trim(),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to generate prompts";
+    const message = error instanceof Error ? error.message : "Failed to generate prompts";
     console.error("Prompt generation error:", error);
     return NextResponse.json(
       { error: message || "Failed to generate prompts. Please try again." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

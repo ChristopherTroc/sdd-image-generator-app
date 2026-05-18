@@ -30,7 +30,7 @@ function renderWithProvider(initialTheme?: "light" | "dark" | "system") {
   return render(
     <ThemeProvider>
       <TestConsumer />
-    </ThemeProvider>,
+    </ThemeProvider>
   );
 }
 
@@ -84,9 +84,7 @@ describe("ThemeProvider", () => {
     });
 
     it("throws if used outside ThemeProvider", () => {
-      expect(() => render(<ThrowTest />)).toThrow(
-        "useTheme must be used within a ThemeProvider",
-      );
+      expect(() => render(<ThrowTest />)).toThrow("useTheme must be used within a ThemeProvider");
     });
   });
 

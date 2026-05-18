@@ -9,9 +9,7 @@ type SuggestionResult = {
   suggestions: string[];
 };
 
-export async function generatePromptSuggestions(
-  keyword: string,
-): Promise<SuggestionResult> {
+export async function generatePromptSuggestions(keyword: string): Promise<SuggestionResult> {
   if (!keyword || !keyword.trim()) {
     throw new Error("Keyword is required");
   }

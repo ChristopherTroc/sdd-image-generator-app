@@ -1,22 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { generateImage } from "./huggingface";
 
-function createUint8Array(bytes: number[]): Uint8Array {
-  return new Uint8Array(bytes);
-}
-
 function mockFetchOk(bytes: number[], mime = "image/png"): void {
   vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-    new Response(createUint8Array(bytes), {
+    new Response(new Blob([new Uint8Array(bytes)]), {
       status: 200,
       headers: { "Content-Type": mime },
-    }),
+    })
   );
 }
 
 function mockFetchError(status: number, body: string): void {
   vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-    new Response(body, { status, headers: { "Content-Type": "text/plain" } }),
+    new Response(body, { status, headers: { "Content-Type": "text/plain" } })
   );
 }
 
@@ -25,7 +21,7 @@ function mockFetchJson(data: unknown): void {
     new Response(JSON.stringify(data), {
       status: 200,
       headers: { "Content-Type": "application/json" },
-    }),
+    })
   );
 }
 
@@ -58,7 +54,7 @@ describe("generateImage", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ inputs: "a cat" }),
-      }),
+      })
     );
   });
 
@@ -73,16 +69,14 @@ describe("generateImage", () => {
   it("throws an error when API key is missing", async () => {
     vi.stubEnv("HUGGINGFACE_API_KEY", "");
 
-    await expect(generateImage("a cat")).rejects.toThrow(
-      "HUGGINGFACE_API_KEY is not configured",
-    );
+    await expect(generateImage("a cat")).rejects.toThrow("HUGGINGFACE_API_KEY is not configured");
   });
 
   it("throws an error when Hugging Face API returns a non-OK status", async () => {
     mockFetchError(503, "Model is loading");
 
     await expect(generateImage("a cat")).rejects.toThrow(
-      "Image generation failed (503): Model is loading",
+      "Image generation failed (503): Model is loading"
     );
   });
 
@@ -95,7 +89,7 @@ describe("generateImage", () => {
     expect(result).toMatch(/^data:image\/png;base64,/);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining("black-forest-labs/FLUX.1-schnell"),
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -107,7 +101,7 @@ describe("generateImage", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large",
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -124,7 +118,7 @@ describe("generateImage", () => {
           inputs: "a cat",
           parameters: { guidance_scale: 7, num_inference_steps: 40 },
         }),
-      }),
+      })
     );
   });
 
@@ -139,7 +133,7 @@ describe("generateImage", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "https://custom.endpoint.com/v1",
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -155,13 +149,12 @@ describe("generateImage", () => {
   it("throws on unexpected JSON response", async () => {
     mockFetchJson({ error: "unexpected format" });
 
-    await expect(generateImage("a cat")).rejects.toThrow(
-      "Unexpected JSON response",
-    );
+    await expect(generateImage("a cat")).rejects.toThrow("Unexpected JSON response");
   });
 
   it("handles JSON response with plain base64 string", async () => {
-    const b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    const b64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
     mockFetchJson(b64);
 
     const result = await generateImage("a cat");

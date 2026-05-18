@@ -47,9 +47,7 @@ export default function Home() {
   }, []);
 
   const handleSelectPrompt = useCallback((prompt: string) => {
-    window.dispatchEvent(
-      new CustomEvent("set-prompt", { detail: prompt }),
-    );
+    window.dispatchEvent(new CustomEvent("set-prompt", { detail: prompt }));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
@@ -85,4 +83,3 @@ export default function Home() {
     </div>
   );
 }
-

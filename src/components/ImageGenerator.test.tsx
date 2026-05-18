@@ -7,13 +7,14 @@ global.fetch = mockFetch;
 
 beforeEach(() => {
   mockFetch.mockReset();
+  vi.useRealTimers();
 });
 
 describe("ImageGenerator", () => {
   it("renders the prompt textarea and generate button", () => {
     render(<ImageGenerator />);
     expect(
-      screen.getByPlaceholderText("Describe the image you want to generate in detail..."),
+      screen.getByPlaceholderText("Describe the image you want to generate in detail...")
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /generate/i })).toBeInTheDocument();
   });
@@ -21,7 +22,7 @@ describe("ImageGenerator", () => {
   it("textarea supports multi-line input", () => {
     render(<ImageGenerator />);
     const textarea = screen.getByPlaceholderText(
-      "Describe the image you want to generate in detail...",
+      "Describe the image you want to generate in detail..."
     );
     expect(textarea.tagName).toBe("TEXTAREA");
   });
@@ -34,7 +35,9 @@ describe("ImageGenerator", () => {
   it("enables generate button when input has text", async () => {
     const user = userEvent.setup();
     render(<ImageGenerator />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     expect(screen.getByRole("button", { name: /generate/i })).toBeEnabled();
   });
@@ -44,7 +47,9 @@ describe("ImageGenerator", () => {
     const user = userEvent.setup();
     render(<ImageGenerator />);
 
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -63,7 +68,9 @@ describe("ImageGenerator", () => {
     });
 
     render(<ImageGenerator />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -80,7 +87,9 @@ describe("ImageGenerator", () => {
     });
 
     render(<ImageGenerator />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -100,7 +109,9 @@ describe("ImageGenerator", () => {
     });
 
     render(<ImageGenerator />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat{Enter}");
 
     const img = await screen.findByRole("img");
@@ -119,7 +130,9 @@ describe("ImageGenerator", () => {
     });
 
     render(<ImageGenerator />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -140,7 +153,9 @@ describe("ImageGenerator", () => {
     });
 
     render(<ImageGenerator />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
     await screen.findByRole("img");
@@ -165,7 +180,9 @@ describe("ImageGenerator", () => {
     });
 
     render(<ImageGenerator onGeneration={onGeneration} />);
-    const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+    const textarea = screen.getByPlaceholderText(
+      "Describe the image you want to generate in detail..."
+    );
     await user.type(textarea, "a cat");
     await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -190,7 +207,9 @@ describe("ImageGenerator", () => {
       });
 
       render(<ImageGenerator />);
-      const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
       await user.type(textarea, "a cat");
       await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -214,7 +233,9 @@ describe("ImageGenerator", () => {
       });
 
       render(<ImageGenerator />);
-      const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
       await user.type(textarea, "a cat");
       await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -239,7 +260,9 @@ describe("ImageGenerator", () => {
       });
 
       render(<ImageGenerator />);
-      const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
       await user.type(textarea, "a cat");
       await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -263,7 +286,9 @@ describe("ImageGenerator", () => {
       });
 
       render(<ImageGenerator />);
-      const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
       await user.type(textarea, "a cat");
       await user.click(screen.getByRole("button", { name: /generate/i }));
 
@@ -323,7 +348,9 @@ describe("ImageGenerator", () => {
       });
 
       render(<ImageGenerator />);
-      const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
       await user.type(textarea, "a cat");
 
       await user.click(screen.getByRole("button", { name: /generate/i }));
@@ -347,7 +374,9 @@ describe("ImageGenerator", () => {
       });
 
       render(<ImageGenerator />);
-      const textarea = screen.getByPlaceholderText("Describe the image you want to generate in detail...");
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
       await user.type(textarea, "a cat");
       await user.click(screen.getByRole("button", { name: /generate/i }));
       await screen.findByRole("img");
@@ -376,5 +405,120 @@ describe("ImageGenerator", () => {
       expect(options[0].value).toBe("black-forest-labs/FLUX.1-schnell");
     });
   });
-});
 
+  describe("retry on 503", () => {
+    it("shows retrying info banner on 202 response", async () => {
+      const user = userEvent.setup();
+      mockFetch.mockResolvedValueOnce({
+        status: 202,
+        ok: true,
+        json: async () => ({
+          status: "retrying",
+          message:
+            "The image generation service is starting up. This may take up to a minute. Please wait...",
+        }),
+      });
+
+      render(<ImageGenerator />);
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
+      await user.type(textarea, "a cat");
+      await user.click(screen.getByRole("button", { name: /generate/i }));
+
+      expect(await screen.findByText(/starting up/)).toBeInTheDocument();
+      expect(screen.getByText("Generating...")).toBeInTheDocument();
+    });
+
+    it("handles multiple 202 responses gracefully", async () => {
+      const user = userEvent.setup();
+      mockFetch.mockResolvedValue({
+        status: 202,
+        ok: true,
+        json: async () => ({
+          status: "retrying",
+          message: "Service starting up...",
+        }),
+      });
+
+      render(<ImageGenerator />);
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
+      await user.type(textarea, "a cat");
+      await user.click(screen.getByRole("button", { name: /generate/i }));
+
+      expect(await screen.findByText(/starting up/)).toBeInTheDocument();
+    });
+  });
+
+  describe("image error handling", () => {
+    it("shows error when image fails to load", async () => {
+      const user = userEvent.setup();
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          imageUrl: "https://example.com/broken.png",
+          prompt: "a cat",
+          id: "123",
+        }),
+      });
+
+      render(<ImageGenerator />);
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
+      await user.type(textarea, "a cat");
+      await user.click(screen.getByRole("button", { name: /generate/i }));
+
+      const img = await screen.findByRole("img");
+      img.dispatchEvent(new Event("error"));
+
+      expect(await screen.findByText(/Failed to load generated image/)).toBeInTheDocument();
+    });
+  });
+
+  describe("forceResult prop", () => {
+    it("displays forced result image", () => {
+      render(
+        <ImageGenerator
+          forceResult={{
+            imageUrl: "https://example.com/forced.png",
+            prompt: "forced prompt",
+            id: "999",
+          }}
+        />
+      );
+      const img = screen.getByRole("img");
+      expect(img).toHaveAttribute("src", "https://example.com/forced.png");
+      expect(screen.getByText(/forced prompt/)).toBeInTheDocument();
+    });
+
+    it("shows download button for forced result", () => {
+      render(
+        <ImageGenerator
+          forceResult={{
+            imageUrl: "https://example.com/forced.png",
+            prompt: "forced prompt",
+            id: "999",
+          }}
+        />
+      );
+      expect(screen.getByText("Download")).toBeInTheDocument();
+    });
+  });
+
+  describe("keyboard navigation", () => {
+    it("does not generate on Shift+Enter", async () => {
+      const user = userEvent.setup();
+      render(<ImageGenerator />);
+      const textarea = screen.getByPlaceholderText(
+        "Describe the image you want to generate in detail..."
+      );
+      await user.type(textarea, "a cat");
+      await user.keyboard("{Shift>}{Enter}{/Shift}");
+      // Should still be loading (not triggered by Shift+Enter)
+      expect(screen.queryByText("Generating...")).not.toBeInTheDocument();
+    });
+  });
+});

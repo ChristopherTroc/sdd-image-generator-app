@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { PromptAssistant } from "@/components/PromptAssistant";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
 
 type GenerationResult = {
   imageUrl: string;
@@ -14,213 +15,48 @@ type ImageGeneratorProps = {
   forceResult?: GenerationResult | null;
 };
 
-const MODELS = [
-  { id: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" },
-];
-
-const RETRY_DELAYS = [60_000, 30_000, 30_000, 30_000, 30_000]; // 1st: 60s, then 30s intervals
-const MAX_RETRIES = RETRY_DELAYS.length;
+const MODELS = [{ id: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" }];
 
 export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<GenerationResult | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [model, setModel] = useState(MODELS[0].id);
+  const [model] = useState(MODELS[0].id);
   const [guidanceScale, setGuidanceScale] = useState(7.5);
   const [numInferenceSteps, setNumInferenceSteps] = useState(30);
 
-  // Retry state
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [retryMessage, setRetryMessage] = useState<string | null>(null);
-  const retryCountRef = useRef(0);
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isMountedRef = useRef(true);
-  const lastRequestRef = useRef<{
-    prompt: string;
-    model: string;
-    guidanceScale: number;
-    numInferenceSteps: number;
-  } | null>(null);
+  const { isLoading, isRetrying, retryMessage, startGeneration, cancelRetry } =
+    useImageGeneration();
 
   const displayResult = forceResult || result;
 
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current);
-        retryTimerRef.current = null;
-      }
-    };
-  }, []);
+  const handleGenerate = useCallback(
+    async (overridePrompt?: string) => {
+      cancelRetry();
+      const effectivePrompt = overridePrompt || prompt;
+      if (!effectivePrompt.trim()) return;
 
-  const executeRequest = useCallback(async (requestPrompt: string, requestModel: string, requestGuidance: number, requestSteps: number) => {
-    const response = await fetch("/api/generate-image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: requestPrompt,
-        model: requestModel,
-        guidance_scale: requestGuidance,
-        num_inference_steps: requestSteps,
-      }),
-    });
+      setError(null);
+      setResult(null);
 
-    const data = await response.json();
-
-    if (response.status === 202 && data.status === "retrying") {
-      // Service is starting up — schedule retry
-      return { retrying: true, message: data.message };
-    }
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to generate image");
-    }
-
-    return { retrying: false, data };
-  }, []);
-
-  const scheduleRetry = useCallback(() => {
-    const currentCount = retryCountRef.current;
-    if (currentCount >= MAX_RETRIES || !lastRequestRef.current) {
-      // Max retries exceeded
-      setIsRetrying(false);
-      setRetryMessage(null);
-      setIsLoading(false);
-      setError(
-        "The image generation service is currently unavailable. Please try again later.",
-      );
-      return;
-    }
-
-    const delay = RETRY_DELAYS[currentCount];
-    retryCountRef.current = currentCount + 1;
-
-    retryTimerRef.current = setTimeout(async () => {
-      if (!isMountedRef.current || !lastRequestRef.current) return;
-
-      const req = lastRequestRef.current;
-      try {
-        const result = await executeRequest(
-          req.prompt,
-          req.model,
-          req.guidanceScale,
-          req.numInferenceSteps,
-        );
-
-        if (!isMountedRef.current) return;
-
-        if (result.retrying) {
-          setRetryMessage(result.message);
-          scheduleRetry();
-        } else {
-          // Success!
-          setIsRetrying(false);
-          setRetryMessage(null);
-          setIsLoading(false);
-          setResult(result.data);
-          onGeneration?.(result.data);
-        }
-      } catch (err) {
-        if (!isMountedRef.current) return;
-        setIsRetrying(false);
-        setRetryMessage(null);
-        setIsLoading(false);
-        setError(
-          err instanceof Error ? err.message : "Something went wrong",
-        );
-      }
-    }, delay);
-  }, [executeRequest, onGeneration]);
-
-  const cancelRetry = useCallback(() => {
-    if (retryTimerRef.current) {
-      clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = null;
-    }
-    retryCountRef.current = 0;
-    setIsRetrying(false);
-    setRetryMessage(null);
-  }, []);
-
-  const handleGenerate = useCallback(async (overridePrompt?: string) => {
-    // Cancel any pending retry
-    cancelRetry();
-
-    const effectivePrompt = overridePrompt || prompt;
-    if (!effectivePrompt.trim()) return;
-
-    setIsLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const result = await executeRequest(
+      startGeneration(
         effectivePrompt.trim(),
         model,
         guidanceScale,
         numInferenceSteps,
+        (data) => {
+          setResult(data as GenerationResult);
+          onGeneration?.(data as GenerationResult);
+        },
+        (message) => {
+          setError(message);
+        }
       );
-
-      if (!isMountedRef.current) return;
-
-      if (result.retrying) {
-        // Service is cold — start retry flow
-        setIsRetrying(true);
-        setRetryMessage(result.message);
-        retryCountRef.current = 1;
-        lastRequestRef.current = {
-          prompt: effectivePrompt.trim(),
-          model,
-          guidanceScale,
-          numInferenceSteps,
-        };
-        // Schedule the next retry
-        const delay = RETRY_DELAYS[0];
-        retryTimerRef.current = setTimeout(async () => {
-          if (!isMountedRef.current || !lastRequestRef.current) return;
-          const req = lastRequestRef.current;
-          try {
-            const retryResult = await executeRequest(
-              req.prompt,
-              req.model,
-              req.guidanceScale,
-              req.numInferenceSteps,
-            );
-            if (!isMountedRef.current) return;
-            if (retryResult.retrying) {
-              setRetryMessage(retryResult.message);
-              scheduleRetry();
-            } else {
-              setIsRetrying(false);
-              setRetryMessage(null);
-              setIsLoading(false);
-              setResult(retryResult.data);
-              onGeneration?.(retryResult.data);
-            }
-          } catch (err) {
-            if (!isMountedRef.current) return;
-            setIsRetrying(false);
-            setRetryMessage(null);
-            setIsLoading(false);
-            setError(err instanceof Error ? err.message : "Something went wrong");
-          }
-        }, delay);
-      } else {
-        setResult(result.data);
-        onGeneration?.(result.data);
-        setIsLoading(false);
-      }
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setIsLoading(false);
-    }
-  }, [prompt, onGeneration, model, guidanceScale, numInferenceSteps, executeRequest, cancelRetry, scheduleRetry]);
+    },
+    [prompt, model, guidanceScale, numInferenceSteps, onGeneration, cancelRetry, startGeneration]
+  );
 
   const handleDownload = useCallback(
     (url?: string, id?: string) => {
@@ -235,7 +71,7 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
       link.click();
       document.body.removeChild(link);
     },
-    [displayResult],
+    [displayResult]
   );
 
   // Listen for prompt selection from history
@@ -255,7 +91,7 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
         handleGenerate();
       }
     },
-    [handleGenerate, isLoading],
+    [handleGenerate, isLoading]
   );
 
   // Close modal on Escape key
@@ -294,39 +130,73 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
             onClick={() => setShowSettings(!showSettings)}
             className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-1.5 transition-colors"
           >
-            <svg className={`w-4 h-4 transition-transform duration-200 ${showSettings ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${showSettings ? "rotate-90" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
             {showSettings ? "Hide settings" : "Settings"}
           </button>
 
           <div className="flex items-center gap-1.5">
-            <PromptAssistant onSelectSuggestion={setPrompt} onAutoGenerate={(s) => handleGenerate(s)} />
+            <PromptAssistant
+              onSelectSuggestion={setPrompt}
+              onAutoGenerate={(s) => handleGenerate(s)}
+            />
             <button
               onClick={() => handleGenerate()}
               disabled={isLoading || !prompt.trim()}
               className="px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg active:scale-[0.98]"
             >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Generating...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Generate
-              </>
-            )}
-          </button>
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Generate
+                </>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
 
         {/* Settings Panel — Collapsible */}
         {showSettings && (
@@ -352,7 +222,10 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
             {/* Guidance Scale */}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                Guidance Scale: <span className="font-bold text-gray-700 dark:text-gray-200">{guidanceScale.toFixed(1)}</span>
+                Guidance Scale:{" "}
+                <span className="font-bold text-gray-700 dark:text-gray-200">
+                  {guidanceScale.toFixed(1)}
+                </span>
               </label>
               <input
                 type="range"
@@ -372,8 +245,13 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
             {/* Inference Steps */}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                Steps: <span className="font-bold text-gray-700 dark:text-gray-200">{numInferenceSteps}</span>
-                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">(more = better quality)</span>
+                Steps:{" "}
+                <span className="font-bold text-gray-700 dark:text-gray-200">
+                  {numInferenceSteps}
+                </span>
+                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
+                  (more = better quality)
+                </span>
               </label>
               <input
                 type="range"
@@ -401,17 +279,42 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <svg className="animate-spin h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Creating your image...</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                  Creating your image...
+                </p>
                 {isRetrying && retryMessage && (
                   <div className="mt-2 px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 max-w-sm">
                     <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-blue-500 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 text-blue-500 animate-pulse flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
-                      <p className="text-blue-700 dark:text-blue-300 text-xs text-left">{retryMessage}</p>
+                      <p className="text-blue-700 dark:text-blue-300 text-xs text-left">
+                        {retryMessage}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -425,8 +328,18 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
       {error && (
         <div className="backdrop-blur-xl bg-red-50/80 dark:bg-red-900/20 rounded-2xl p-5 border border-red-200/80 dark:border-red-800/50 shadow-lg">
           <div className="flex items-center gap-3 mb-3">
-            <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5 text-red-500 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
           </div>
@@ -442,10 +355,7 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
       {/* Result Image — Glassmorphism Card */}
       {displayResult && (
         <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-2xl overflow-hidden shadow-lg shadow-black/5 dark:shadow-black/20 border border-white/50 dark:border-gray-700/50 transition-all duration-300">
-          <div
-            className="relative group cursor-pointer"
-            onClick={() => setShowModal(true)}
-          >
+          <div className="relative group cursor-pointer" onClick={() => setShowModal(true)}>
             <img
               src={displayResult.imageUrl}
               alt={displayResult.prompt}
@@ -456,7 +366,12 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
               <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                    />
                   </svg>
                   Click to zoom
                 </span>
@@ -475,7 +390,12 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
               className="px-4 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-all duration-200 flex items-center gap-2 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 shadow-sm hover:shadow-md active:scale-[0.98]"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
               </svg>
               Download
             </button>
@@ -489,17 +409,24 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 dark:bg-black/80 backdrop-blur-md"
           onClick={() => setShowModal(false)}
         >
-          <div
-            className="relative max-w-[90vw] max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setShowModal(false)}
               className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="Close zoom"
             >
-              <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4 text-gray-600 dark:text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
 
@@ -519,7 +446,12 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
                   className="px-4 py-2 rounded-xl bg-white/20 text-white hover:bg-white/30 text-sm font-medium transition-all duration-200 flex items-center gap-2 backdrop-blur-sm border border-white/20 shadow-lg"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
                   </svg>
                   Download
                 </button>
@@ -531,4 +463,3 @@ export function ImageGenerator({ onGeneration, forceResult }: ImageGeneratorProp
     </div>
   );
 }
-

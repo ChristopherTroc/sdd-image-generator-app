@@ -10,7 +10,7 @@ function renderWithTheme(initialTheme?: "light" | "dark" | "system") {
   return render(
     <ThemeProvider>
       <ThemeToggle />
-    </ThemeProvider>,
+    </ThemeProvider>
   );
 }
 

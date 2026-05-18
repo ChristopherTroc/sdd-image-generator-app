@@ -69,7 +69,6 @@ All change artifacts are stored under `openspec/changes/archive/` with synced sp
 
 3. **Accept model terms (one-time):**
    - [FLUX.1-schnell](https://huggingface.co/black-forest-labs/FLUX.1-schnell) — fast inference model (default)
-   - [SD3.5-large](https://huggingface.co/stabilityai/stable-diffusion-3.5-large) — requires Pro subscription
 
 4. **Start the development server:**
    ```bash
@@ -119,6 +118,9 @@ src/
 │   ├── ThemeToggle.tsx       # Light/dark/system mode toggle
 │   ├── Button.tsx            # Reusable styled button
 │   └── *.test.tsx            # Component tests
+├── hooks/                    # Custom React hooks
+│   ├── useImageGeneration.ts # Generation logic with 503 retry & timer management
+│   └── useImageGeneration.test.ts
 ├── lib/                      # Utility functions and helpers
 │   ├── huggingface.ts        # Hugging Face Inference API for image generation
 │   ├── llm.ts                # LLM client (DeepSeek via OpenAI SDK) for prompts
@@ -158,10 +160,11 @@ src/
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `HUGGINGFACE_API_KEY` | Yes | Hugging Face API token for inference |
-| `NEXT_PUBLIC_API_URL` | No | API base URL (default: localhost:3000/api) |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `HUGGINGFACE_API_KEY` | Yes | — | Hugging Face API token for inference |
+| `HF_INFERENCE_ENDPOINT` | No | `https://api-inference.huggingface.co` | Custom endpoint for dedicated inference or proxy |
+| `NEXT_PUBLIC_API_URL` | No | `http://localhost:3000/api` | API base URL for client requests |
 
 Copy `.env.example` to `.env.local` and fill in the required values.
 

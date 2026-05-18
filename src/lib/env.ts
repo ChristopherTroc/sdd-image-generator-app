@@ -14,7 +14,8 @@ const envSchema = {
 // Server-only environment variables (not exposed to client)
 const serverEnvSchema = {
   HUGGINGFACE_API_KEY: {
-    description: "Hugging Face Inference API token (get one at https://huggingface.co/settings/tokens)",
+    description:
+      "Hugging Face Inference API token (get one at https://huggingface.co/settings/tokens)",
   },
 } as const;
 
@@ -59,7 +60,7 @@ export function getServerEnv(): ServerEnv {
     const value = process.env[key];
     if (!value) {
       throw new Error(
-        `Missing required server environment variable: ${key}. ${config.description}`,
+        `Missing required server environment variable: ${key}. ${config.description}`
       );
     }
     env[key] = value;
